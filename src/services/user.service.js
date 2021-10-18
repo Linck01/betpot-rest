@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const { User } = require('../models');
 const ApiError = require('../utils/ApiError');
+const { Token } = require('../models');
 
 /**
  * Create a user
@@ -36,6 +37,7 @@ const queryUsers = async (filter, options) => {
 const getUserById = async (id) => {
   return User.findById(id);
 };
+
 
 /**
  * Get user by email

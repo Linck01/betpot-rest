@@ -45,10 +45,17 @@ const deleteUser = {
   }),
 };
 
+const getUserByJWT = {
+  headers: Joi.object().keys({
+    authorization: Joi.string(),
+  }),
+};
+
 module.exports = {
   createUser,
   getUsers,
   getUser,
   updateUser,
   deleteUser,
+  getUserByJWT,
 };
