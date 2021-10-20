@@ -1,32 +1,29 @@
 const Joi = require('joi');
 const { password, objectId } = require('./custom.validation');
 
-const createUser = {
+const createGame = {
   body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().custom(password),
-    name: Joi.string().required(),
-    role: Joi.string().required().valid('user', 'admin'),
+    name: Joi.string().required().min(5).max(128)
   }),
 };
 
-const getUsers = {
+const getGames = {
   query: Joi.object().keys({
-    name: Joi.string(),
-    role: Joi.string(),
+    name: Joi.string().allow('').optional(),
+    userId: Joi.string().allow('').optional(),
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),
   }),
 };
 
-const getUser = {
+const getGame = {
   params: Joi.object().keys({
     userId: Joi.string().custom(objectId),
   }),
 };
 
-const updateUser = {
+const updateGame = {
   params: Joi.object().keys({
     userId: Joi.required().custom(objectId),
   }),
@@ -39,16 +36,17 @@ const updateUser = {
     .min(1),
 };
 
-const deleteUser = {
+const deleteGame = {
   params: Joi.object().keys({
     userId: Joi.string().custom(objectId),
   }),
 };
 
+
 module.exports = {
-  createUser,
-  getUsers,
-  getUser,
-  updateUser,
-  deleteUser
+  createGame,
+  getGames,
+  getGame,
+  updateGame,
+  deleteGame
 };
