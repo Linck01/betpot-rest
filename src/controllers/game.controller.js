@@ -4,6 +4,11 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { gameService } = require('../services');
 
+
+const gameServer = [
+  '10.0.0.3'
+]
+
 const createGame = catchAsync(async (req, res) => {
   const game = await gameService.createGame(req.user.id,req.body);
   res.status(httpStatus.CREATED).send(game);
@@ -22,6 +27,8 @@ const getGame = catchAsync(async (req, res) => {
   if (!game) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found');
   }
+  game.server = gameServer[0];
+  
   res.send(game);
 });
 

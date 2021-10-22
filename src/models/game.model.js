@@ -14,6 +14,16 @@ const gameSchema = mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    serverId: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    chatHistory: {
+      type: Array,
+      required: true,  
+      default: []
     }
   },
   {

@@ -13,7 +13,7 @@ const createGame = async (userId, gameBody) => {
   }
 
   gameBody.userId = userId;
-  
+
   return Game.create(gameBody);
 };
 

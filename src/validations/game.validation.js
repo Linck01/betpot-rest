@@ -19,7 +19,7 @@ const getGames = {
 
 const getGame = {
   params: Joi.object().keys({
-    userId: Joi.string().custom(objectId),
+    gameId: Joi.string().custom(objectId),
   }),
 };
 
