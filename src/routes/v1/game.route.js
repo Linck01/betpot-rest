@@ -13,6 +13,7 @@ router
   .route('/')
   .post(auth('createGame'), validate(gameValidation.createGame), gameController.createGame);
 
+
 router
   .route('/:gameId')
   .patch(auth('manageGames'), validate(gameValidation.updateGame), gameController.updateGame)

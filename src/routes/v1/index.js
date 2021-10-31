@@ -3,6 +3,8 @@ const authRoute = require('./auth.route');
 const userRoute = require('./user.route');
 const docsRoute = require('./docs.route');
 const gameRoute = require('./game.route');
+const messageRoute = require('./message.route');
+const memberRoute = require('./member.route');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -20,6 +22,14 @@ const defaultRoutes = [
     path: '/games',
     route: gameRoute,
   },
+  {
+    path: '/messages',
+    route: messageRoute,
+  },
+  {
+    path: '/members',
+    route: memberRoute,
+  }
 ];
 
 const devRoutes = [

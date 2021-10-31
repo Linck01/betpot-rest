@@ -4,7 +4,6 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { gameService } = require('../services');
 
-
 const gameServer = [
   '10.0.0.3'
 ]
