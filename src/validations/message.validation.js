@@ -1,24 +1,25 @@
 const Joi = require('joi');
 const { password, objectId } = require('./custom.validation');
 
-const createGameMessage = {
+const createMessage = {
   body: Joi.object().keys({
     message: Joi.string().required().min(1).max(1024),
     userId: Joi.required().custom(objectId),
     gameId: Joi.string().custom(objectId),
   }),
 };
-/*
-const getGameMessages = {
+
+const getMessages = {
   query: Joi.object().keys({
-    name: Joi.string().allow('').optional(),
-    userId: Joi.string().allow('').optional(),
+    gameId: Joi.custom(objectId),
+    userId: Joi.custom(objectId).optional(),
     sortBy: Joi.string(),
-    limit: Joi.number().integer(),
+    limit: Joi.number().integer().max(100),
     page: Joi.number().integer(),
   }),
 };
 
+/*
 const getGameMessage = {
   params: Joi.object().keys({
     gameId: Joi.string().custom(objectId),
@@ -46,8 +47,9 @@ const deleteGameMessage = {
 
 */
 module.exports = {
-  createGameMessage,
- /* getGameMessages,
+  createMessage,
+  getMessages,
+ /*
   getGameMessage,
   updateGameMessage,
   deleteGameMessage*/

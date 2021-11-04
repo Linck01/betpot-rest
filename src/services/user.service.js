@@ -2,6 +2,8 @@ const httpStatus = require('http-status');
 const { User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Token } = require('../models');
+var util = require('util');
+
 
 /**
  * Create a user
@@ -21,7 +23,7 @@ const createUser = async (userBody) => {
  * @param {Object} options - Query options
  * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
  * @param {number} [options.limit] - Maximum number of results per page (default = 10)
- * @param {number} [options.page] - Current page (default = 1)
+ * @param {number} [options.page] - Current page (default = 1) a.user = usersResult.results.find( user => user.id == a.userId);
  * @returns {Promise<QueryResult>}
  */
 const queryUsers = async (filter, options) => {
@@ -34,8 +36,19 @@ const queryUsers = async (filter, options) => {
  * @param {ObjectId} id
  * @returns {Promise<User>}
  */
-const getUserById = async (id) => {
-  return User.findById(id);
+const getUserById = async (id, projection) => {
+  return User.findById(id, projection);
+};
+
+const addUsersToArray = async (arr) => {
+  const usersResult = await User.find({'_id' : { $in : [...new Set(arr.map(m => m.userId + ''))]}}).select({ id: 1, username: 1}).exec();
+  
+  for (let i in arr) { 
+    arr[i] = arr[i].toObject(); 
+    arr[i].user = usersResult.find( u => u.id == arr[i].userId); 
+  }
+
+  return arr;
 };
 
 
@@ -55,7 +68,7 @@ const getUserByEmail = async (email) => {
  * @returns {Promise<User>}
  */
 const updateUserById = async (userId, updateBody) => {
-  const user = await getUserById(userId);
+  const user = await getUserById(userId, {});
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -73,7 +86,7 @@ const updateUserById = async (userId, updateBody) => {
  * @returns {Promise<User>}
  */
 const deleteUserById = async (userId) => {
-  const user = await getUserById(userId);
+  const user = await getUserById(userId, {});
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -88,4 +101,5 @@ module.exports = {
   getUserByEmail,
   updateUserById,
   deleteUserById,
+  addUsersToArray,
 };

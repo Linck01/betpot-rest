@@ -3,10 +3,18 @@ const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { messageService } = require('../services');
+const { userService } = require('../services');
+const socket = require('../utils/socket');
 
 const createMessage = catchAsync(async (req, res) => {
-  console.log(req.user.id,req.body);
-  const message = await messageService.createMessage(req.user.id,req.body);
+  let message = await messageService.createMessage(req.user.id,req.body);
+  const user = await userService.getUserById(req.user.id, { username: true, role: true});
+  console.log(user);
+  message = message.toObject();
+  message.user = user;
+
+  socket.sendChatMessageToGameMembers(message);
+
   res.status(httpStatus.CREATED).send(message);
 });
 
@@ -14,9 +22,10 @@ const getMessages = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['gameId']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
 
-  const result = await messageService.queryMessages(filter, options);
-  // add user to result NEXT
-  res.send(result);
+  const messagesResult = await messageService.queryMessages(filter, options);
+  messagesResult.results = await userService.addUsersToArray(messagesResult.results);
+
+  res.send(messagesResult);
 });
 
 const getMessage = catchAsync(async (req, res) => {

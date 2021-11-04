@@ -19,6 +19,9 @@ const gameSchema = mongoose.Schema(
       type: Number,
       required: true,
       default: 0
+    },
+    moderators: {
+      type: [mongoose.SchemaTypes.ObjectId]
     }
   },
   {
