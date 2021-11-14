@@ -11,6 +11,11 @@ const memberSchema = mongoose.Schema(
       trim: true,
     },
     userId: {
+      type: mongoose.SchemaTypes.ObjectId,
+      required: true,
+      trim: true,
+    },
+    username: {
       type: String,
       required: true,
       trim: true,
