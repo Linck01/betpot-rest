@@ -22,7 +22,6 @@ const getBet = catchAsync(async (req, res) => {
   if (!bet) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found');
   }
-  bet.server = betServer[0];
   
   res.send(bet);
 });

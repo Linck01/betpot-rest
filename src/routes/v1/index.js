@@ -4,6 +4,7 @@ const userRoute = require('./user.route');
 const docsRoute = require('./docs.route');
 const gameRoute = require('./game.route');
 const betRoute = require('./bet.route');
+const tipRoute = require('./tip.route');
 const messageRoute = require('./message.route');
 const memberRoute = require('./member.route');
 const config = require('../../config/config');
@@ -34,6 +35,10 @@ const defaultRoutes = [
   {
     path: '/bets',
     route: betRoute,
+  },
+  {
+    path: '/tips',
+    route: tipRoute,
   }
 ];
 

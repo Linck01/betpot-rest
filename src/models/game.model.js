@@ -11,7 +11,7 @@ const gameSchema = mongoose.Schema(
       trim: true,
     },
     userId: {
-      type: String,
+      type: mongoose.SchemaTypes.ObjectId,
       required: true,
       trim: true,
     },

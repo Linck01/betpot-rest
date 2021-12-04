@@ -6,3 +6,4 @@ module.exports.gameService = require('./game.service');
 module.exports.memberService = require('./member.service');
 module.exports.messageService = require('./message.service');
 module.exports.betService = require('./bet.service');
+module.exports.tipService = require('./tip.service');

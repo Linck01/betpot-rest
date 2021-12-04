@@ -31,23 +31,14 @@ const queryMembers = async (filter, options) => {
   return members;
 };
 
-/**
- * Get member by id
- * @param {ObjectId} id
- * @returns {Promise<Member>}
- */
-const getMemberById = async (id) => {
-  return Member.findById(id);
-};
 
+const getMemberByGameUserId = async (userId, gameId) => {
+  const member = Member.findOne({userId, gameId});
 
-/**
- * Get member by email
- * @param {string} email
- * @returns {Promise<Member>}
- */
-const getMemberByEmail = async (email) => {
-  return Member.findOne({ email });
+  if (!member)
+    member = await this.createMember(userId, { gameId })
+
+  return member;
 };
 
 /**
@@ -86,8 +77,8 @@ const deleteMemberById = async (memberId) => {
 module.exports = {
   createMember,
   queryMembers,
-  getMemberById,
-  getMemberByEmail,
+  getMemberByGameUserId,
   updateMemberById,
   deleteMemberById,
+  getMemberByGameUserId
 };

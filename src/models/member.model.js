@@ -20,8 +20,8 @@ const memberSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
-    serverId: {
-      type: Number,
+    points: {
+      type: mongoose.Decimal128,
       required: true,
       default: 0
     }
@@ -40,6 +40,6 @@ memberSchema.plugin(paginate);
 /**
  * @typedef GameMember
  */
-const GameMember = mongoose.model('GameMember', memberSchema);
+const Member = mongoose.model('GameMember', memberSchema);
 
-module.exports = GameMember;
+module.exports = Member;
