@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
+const bannerUrls = require('../utils/bannerUrls');
 const { gameService } = require('../services');
 
 const gameServer = [
@@ -9,6 +10,7 @@ const gameServer = [
 ]
 
 const createGame = catchAsync(async (req, res) => {
+  req.body.bannerUrl = bannerUrls.getRandom();
   const game = await gameService.createGame(req.user.id,req.body);
   res.status(httpStatus.CREATED).send(game);
 });

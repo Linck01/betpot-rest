@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const { Member } = require('../models');
 const ApiError = require('../utils/ApiError');
+const { gameService } = require('./');
 
 /**
  * Create a member
@@ -8,11 +9,10 @@ const ApiError = require('../utils/ApiError');
  * @returns {Promise<Member>}
  */
 const createMember = async (userId, memberBody) => {
-  if (await Member.isNameTaken(memberBody.name)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Name already taken');
-  }
-
   memberBody.userId = userId;
+
+  const game = await gameService.getGameById(memberBody.gameId);
+  memberBody.currency = game.startCurrency;
 
   return Member.create(memberBody);
 };
@@ -32,14 +32,30 @@ const queryMembers = async (filter, options) => {
 };
 
 
-const getMemberByGameUserId = async (userId, gameId) => {
+const getMemberByGameUserId = async (gameId, userId) => {
   const member = Member.findOne({userId, gameId});
-
-  if (!member)
-    member = await this.createMember(userId, { gameId })
 
   return member;
 };
+
+
+/**
+ * Update member by gameId + userId
+ * @param {ObjectId} memberId
+ * @param {Object} updateBody
+ * @returns {Promise<Member>}
+ */
+ const updateMemberByGameUserId = async (gameId, userId, updateBody) => {
+  const member = await getMemberByGameUserId(gameId, userId);
+  if (!member) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
+  }
+  
+  Object.assign(member, updateBody);
+  await member.save();
+  return member;
+};
+
 
 /**
  * Update member by id
@@ -52,11 +68,14 @@ const updateMemberById = async (memberId, updateBody) => {
   if (!member) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
   }
-  if (updateBody.email && (await Member.isEmailTaken(updateBody.email, memberId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
+  
   Object.assign(member, updateBody);
   await member.save();
+  return member;
+};
+
+const findOneAndUpdate = async (filter, update, options) => {
+  const member = Member.findOneAndUpdate(filter, update, {...options, useFindAndModify: false});
   return member;
 };
 
@@ -80,5 +99,7 @@ module.exports = {
   getMemberByGameUserId,
   updateMemberById,
   deleteMemberById,
-  getMemberByGameUserId
+  getMemberByGameUserId,
+  updateMemberByGameUserId,
+  findOneAndUpdate
 };

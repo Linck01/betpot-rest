@@ -5,23 +5,59 @@ const { toJSON, paginate } = require('./plugins');
 
 const gameSchema = mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
     userId: {
       type: mongoose.SchemaTypes.ObjectId,
       required: true,
-      trim: true,
     },
     serverId: {
       type: Number,
       required: true,
       default: 0
     },
+    bannerUrl: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    desc: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    currencyName: {
+      type: String,
+      trim: true,
+      default: '⭐'
+    },
+    desc: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     moderators: {
-      type: [mongoose.SchemaTypes.ObjectId]
+      type: [mongoose.SchemaTypes.ObjectId],
+      default: []
+    },
+    isFinished: {
+      type: Boolean,
+      default: false
+    },
+    totalBets: {
+      type: Number,
+      default: 0
+    },
+    totalMembers: {
+      type: Number,
+      default: 0
+    },
+    startCurrency: {
+      type: mongoose.Decimal128,
+      default: 1000
     }
   },
   {

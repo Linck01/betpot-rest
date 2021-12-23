@@ -3,9 +3,13 @@ const { password, objectId } = require('./custom.validation');
 
 const createBet = {
   body: Joi.object().keys({
-    title: Joi.string().required().min(5).max(128),
-    gameId: Joi.string().required().custom(objectId),
-    answers: Joi.array().required().items(Joi.string()).min(2).max(10),
+    title: Joi.string().required().min(1).max(128),
+    gameId: Joi.required().custom(objectId),
+    desc: Joi.string().max(512),
+    answers: Joi.array().required().items(Joi.object().keys({
+      title: Joi.string().required().min(1).max(64),
+      odds: Joi.number().required().min(1).max(32),
+    }),).min(2).max(32),
     timeLimit: Joi.date().required()
   }),
 };
@@ -22,7 +26,7 @@ const getBets = {
 
 const getBet = {
   params: Joi.object().keys({
-    betId: Joi.string().custom(objectId),
+    betId: Joi.custom(objectId),
   }),
 };
 

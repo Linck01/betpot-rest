@@ -3,7 +3,7 @@ const { password, objectId } = require('./custom.validation');
 
 const createGame = {
   body: Joi.object().keys({
-    name: Joi.string().required().min(5).max(128)
+    title: Joi.string().required().min(5).max(128)
   }),
 };
 

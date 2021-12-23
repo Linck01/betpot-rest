@@ -5,6 +5,11 @@ const { toJSON, paginate } = require('./plugins');
 
 const tipSchema = mongoose.Schema(
   {
+    betId: {
+      type: mongoose.SchemaTypes.ObjectId,
+      required: true,
+      trim: true,
+    },
     userId: {
       type: mongoose.SchemaTypes.ObjectId,
       required: true,
@@ -15,17 +20,12 @@ const tipSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
-    betId: {
-      type: mongoose.SchemaTypes.ObjectId,
-      required: true,
-      trim: true,
-    },
     optionId: {
       type: Number,
       required: true,
       trim: true,
     },
-    amount: {
+    currency: {
       type: mongoose.Decimal128,
       required: true,
       default: 0
@@ -39,17 +39,6 @@ const tipSchema = mongoose.Schema(
 // add plugin that converts mongoose to json
 tipSchema.plugin(toJSON);
 tipSchema.plugin(paginate);
-
-/**
- * Check if name is taken
- * @param {string} name - The tip's name
- * @param {ObjectId} [excludeTipId] - The id of the tip to be excluded
- * @returns {Promise<boolean>}
- */
-tipSchema.statics.getTipByUserBetOption = async function (userId, betId, optionId) {
-  const tip = await this.findOne({ userId, betId, optionId });
-  return !!tip;
-};
 
 /**
  * @typedef Tip

@@ -11,30 +11,52 @@ const betSchema = mongoose.Schema(
       trim: true,
     },
     gameId: {
-      type: String,
+      type: mongoose.SchemaTypes.ObjectId,
       required: true,
       trim: true,
     },
+    desc: {
+      type: String,
+      trim: true,
+    },
+    tipCount: {
+      type: Number,
+      default: 0
+    },
+    inPot: {
+      type: Number,
+      default: 0
+    },
+    isFinished: {
+      type: Boolean,
+      default: false
+    },
     answers: {
-      type: [String],
+      type: [{
+        id: Number,
+        title: String,
+        isCorrect: {
+          type: Boolean,
+          default: false
+        },
+        odds: {
+          type: mongoose.Decimal128,
+          required: true
+        },
+        inPot: {
+          type: mongoose.Decimal128,
+          default: 0
+        }
+      }],
       required: true,
     },
     timeLimit: {
       type: Date,
       required: true,
-    },
-    tips: {
-      type: [{
-        userId: mongoose.SchemaTypes.ObjectId,
-        username: String,
-        value: Boolean
-      }],
-      required: true,
-      default: [],
     }
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },
   }
 );
 

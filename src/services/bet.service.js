@@ -58,11 +58,14 @@ const updateBetById = async (betId, updateBody) => {
   if (!bet) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found');
   }
-  if (updateBody.email && (await Bet.isEmailTaken(updateBody.email, betId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
+  
   Object.assign(bet, updateBody);
   await bet.save();
+  return bet;
+};
+
+const findOneAndUpdate = async (filter, update, options) => {
+  const bet = Bet.findOneAndUpdate(filter, update, {...options, useFindAndModify: false});
   return bet;
 };
 
@@ -87,4 +90,5 @@ module.exports = {
   getBetByEmail,
   updateBetById,
   deleteBetById,
+  findOneAndUpdate
 };

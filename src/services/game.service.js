@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const { Game } = require('../models');
 const ApiError = require('../utils/ApiError');
+const bannerUrls = require('../utils/bannerUrls');
 
 /**
  * Create a game
@@ -8,11 +9,12 @@ const ApiError = require('../utils/ApiError');
  * @returns {Promise<Game>}
  */
 const createGame = async (userId, gameBody) => {
-  if (await Game.isNameTaken(gameBody.name)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Name already taken');
+  if (await Game.isNameTaken(gameBody.title)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Title already taken');
   }
 
   gameBody.userId = userId;
+  gameBody.bannerUrl = bannerUrls.getRandom();
 
   return Game.create(gameBody);
 };

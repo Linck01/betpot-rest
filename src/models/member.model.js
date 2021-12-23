@@ -5,8 +5,8 @@ const { toJSON, paginate } = require('./plugins');
 
 const memberSchema = mongoose.Schema(
   {
-    name: {
-      type: String,
+    gameId: {
+      type: mongoose.SchemaTypes.ObjectId,
       required: true,
       trim: true,
     },
@@ -15,12 +15,7 @@ const memberSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
-    username: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    points: {
+    currency: {
       type: mongoose.Decimal128,
       required: true,
       default: 0

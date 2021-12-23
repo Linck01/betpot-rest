@@ -1,7 +1,7 @@
 const httpStatus = require('http-status');
-const { Tip, User } = require('../models');
+const { Tip } = require('../models');
 const ApiError = require('../utils/ApiError');
-const { memberService } = require('./');
+const { memberService, betService, gameService } = require('./');
 
 /**
  * Create a tip
@@ -9,22 +9,48 @@ const { memberService } = require('./');
  * @returns {Promise<Tip>}
  */
 const createTip = async (userId,tipBody) => {
-  console.log(tipBody);
-  const member = await memberService.getMemberByGameUserId(userId, tipBody.gameId);
+  let member = await memberService.getMemberByGameUserId(tipBody.gameId, userId);
+  
+  if(!member)
+    member = await memberService.createMember(userId, { gameId: tipBody.gameId })
 
-  if (member.points < tipBody.amount) 
+  console.log('AAAA', member, tipBody);
+  if (member.currency < tipBody.currency) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Not enough points to spend.');
   
+  const bet = await betService.getBetById(tipBody.betId);
+  if (!bet) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
+  
+  const game = await gameService.getGameById(tipBody.gameId);
+  if (!bet) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  let tip = await Tip.getTipByUserBetOption(userId,tipBody.betId,tipBody.option);
+  //await memberService.updateMemberByGameUserId(, { currency: member.currency - tipBody.currency });
+  await memberService.findOneAndUpdate({ gameId: tipBody.gameId, userId }, { $inc: { currency: -tipBody.currency}}, {});
+  
+
+  let tip = await getTipByUserBetOption(tipBody.betId,userId,tipBody.optionId);
+  console.log(tip);
   if (tip) {
-    return await this.updateTipById(tip.id, {...tip, amount: (tip.amount + tipBody.amount)})
+    console.log('incTip', tip.currency, tipBody.currency, tip.currency + tipBody.currency);
+    await findOneAndUpdate({ _id: tip.id }, { $inc: { currency: tipBody.currency }});
 
+    await betService.findOneAndUpdate({ _id: tipBody.betId }, { $inc: { inPot: tipBody.currency}}, {});
+    return;
   } else {
+    console.log('newTip');
     tipBody.userId = userId;
-    return Tip.create(tipBody);
+    await Tip.create(tipBody);
+
+    await betService.findOneAndUpdate({ _id: tipBody.betId }, { $inc: { inPot: tipBody.currency, tipCount : 1}}, {});
   }
   
+};
+
+const findOneAndUpdate = async (filter, update, options) => {
+  const tip = Tip.findOneAndUpdate(filter, update, {...options, useFindAndModify: false});
+  return tip;
 };
 
 /**
@@ -56,6 +82,11 @@ const getTipById = async (id) => {
   return tip;
 };
 
+const getTipByUserBetOption = async (betId, userId, optionId) => {
+  console.log(betId, userId, optionId);
+  const tip = await Tip.findOne({ betId, userId, optionId });
+  return tip;
+};
 
 /**
  * Get tip by email
@@ -77,9 +108,7 @@ const updateTipById = async (tipId, updateBody) => {
   if (!tip) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Tip not found');
   }
-  if (updateBody.email && (await Tip.isEmailTaken(updateBody.email, tipId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
+  
   Object.assign(tip, updateBody);
   await tip.save();
   return tip;
@@ -107,4 +136,5 @@ module.exports = {
   getTipById,
   updateTipById,
   deleteTipById,
+  getTipByUserBetOption
 };

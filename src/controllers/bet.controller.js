@@ -10,7 +10,7 @@ const createBet = catchAsync(async (req, res) => {
 });
 
 const getBets = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ['name', 'userId']);
+  const filter = pick(req.query, ['gameId', 'userId']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
   
   const result = await betService.queryBets(filter, options);

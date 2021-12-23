@@ -3,7 +3,11 @@ const { password, objectId } = require('./custom.validation');
 
 const createTip = {
   body: Joi.object().keys({
-    betId: Joi.string().required().min(5).max(128)
+    betId: Joi.custom(objectId),
+    gameId: Joi.custom(objectId),
+    userId: Joi.custom(objectId),
+    optionId: Joi.number().min(0).max(31),
+    currency: Joi.number()
   }),
 };
 
