@@ -20,9 +20,12 @@ const tipSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
-    optionId: {
+    answerDecimal: {
+      type: mongoose.Decimal128,
+      trim: true,
+    },
+    answerId: {
       type: Number,
-      required: true,
       trim: true,
     },
     currency: {
@@ -32,7 +35,7 @@ const tipSchema = mongoose.Schema(
     }
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },
   }
 );
 

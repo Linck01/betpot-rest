@@ -9,12 +9,16 @@ const tipServer = [
 ]
 
 const createTip = catchAsync(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized.');
+  }
+  
   const tip = await tipService.createTip(req.user.id,req.body);
   res.status(httpStatus.CREATED).send(tip);
 });
 
 const getTips = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ['name', 'userId']);
+  const filter = pick(req.query, ['betId', 'userId']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
 
   const result = await tipService.queryTips(filter, options);

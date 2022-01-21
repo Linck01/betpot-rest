@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const { Bet } = require('../models');
 const ApiError = require('../utils/ApiError');
+const { gameService } = require('./');
 
 /**
  * Create a bet
@@ -8,10 +9,37 @@ const ApiError = require('../utils/ApiError');
  * @returns {Promise<Bet>}
  */
 const createBet = async (userId, betBody) => {
-
   betBody.userId = userId;
 
+  const game = await gameService.getGameById(betBody.gameId);
+  if (!game) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
+
+  if (betBody.betType == 'scale')
+    populateScale_answers(betBody);
+
   return Bet.create(betBody);
+};
+
+const populateScale_answers = (betBody) => {
+  const { min, max, step } = betBody.scale_options;
+  const possibleAnswers = ((max - min) / step) + 1;
+  let intervalSize;
+  
+  if (possibleAnswers <= 32) {
+    intervalSize = step;
+    maxFroms = possibleAnswers;
+  } else {
+    intervalSize = (max - min) / 32;
+    maxFroms = 32;
+  }
+
+  betBody.scale_answers = [];
+
+  for (let i = 0; i < maxFroms; i++)
+    betBody.scale_answers.push({from: min+i*intervalSize, to: min+(i+1)*intervalSize});
+  
+  return;
 };
 
 /**

@@ -7,8 +7,14 @@ const memberController = require('../../controllers/member.controller');
 
 const router = express.Router();
 
-router.get('/', validate(memberValidation.getMembers), memberController.getMembers);
-//router.get('/:gameId/:userId', validate(memberValidation.getGame), memberController.getGameMember);
+router
+  .route('/')
+  .get(validate(memberValidation.getMembers), memberController.getMembers)
+
+router
+  .route('/:gameId/:userId')
+  .get(validate(memberValidation.getGame), memberController.getMember)
+
 
 
 module.exports = router;

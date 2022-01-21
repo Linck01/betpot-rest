@@ -1,6 +1,8 @@
 const httpStatus = require('http-status');
 const { Message } = require('../models');
 const ApiError = require('../utils/ApiError');
+const { gameService, userService } = require('./');
+const socket = require('../utils/socket');
 
 /**
  * Create a message
@@ -10,7 +12,19 @@ const ApiError = require('../utils/ApiError');
 const createMessage = async (userId, messageBody) => {
   messageBody.userId = userId;
 
-  return Message.create(messageBody);
+  const game = await gameService.getGameById(messageBody.gameId);
+  if (!game) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
+
+  const user = await userService.getUserById(userId, { username: true });
+
+  let message = await Message.create(messageBody);
+  message = message.toObject();
+  message.user = user;
+
+  await socket.sendChatMessageToGame(message);
+
+  return message;
 };
 
 /**

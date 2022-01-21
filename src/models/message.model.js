@@ -22,7 +22,7 @@ const messageSchema = mongoose.Schema(
     }
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },
   }
 );
 

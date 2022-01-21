@@ -79,6 +79,11 @@ const findOneAndUpdate = async (filter, update, options) => {
   return member;
 };
 
+const findOne = async (filter) => {
+  const member = Member.findOne(filter);
+  return member;
+};
+
 /**
  * Delete member by id
  * @param {ObjectId} memberId
@@ -101,5 +106,6 @@ module.exports = {
   deleteMemberById,
   getMemberByGameUserId,
   updateMemberByGameUserId,
-  findOneAndUpdate
+  findOneAndUpdate,
+  findOne
 };

@@ -17,10 +17,16 @@ module.exports.init = (_io) => {
     });
 }
 
-module.exports.sendChatMessageToGameMembers = (message) => {
-    console.log('Sending chatMessage to room ' + message.gameId);
+module.exports.sendChatMessageToGame = async (message) => {
+    console.log('Sending socket chatMessage to room ' + message.gameId);
 
-    io.to(message.gameId + '').emit('chatMessage', message);
+    io.to('game:' + message.gameId).emit('chatMessage', message);
+}
+
+module.exports.sendNewTipToGame = async (tip,bet) => {
+    console.log('Sending socket newTip to room ' + bet.gameId);
+
+    io.to('game:' + bet.gameId).emit('newTip', {tip, bet});
 }
 
 module.exports.sendMessageToUser = (message) => {

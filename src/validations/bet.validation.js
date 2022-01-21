@@ -6,10 +6,18 @@ const createBet = {
     title: Joi.string().required().min(1).max(128),
     gameId: Joi.required().custom(objectId),
     desc: Joi.string().max(512),
-    answers: Joi.array().required().items(Joi.object().keys({
+    betType: Joi.string().max(32),
+    catalogue_answers: Joi.array().items(Joi.object().keys({
       title: Joi.string().required().min(1).max(64),
+      odds: Joi.number().required().min(0).max(32),
+    }).min(2).max(32)),
+    scale_options: Joi.object().keys({
+      step: Joi.number(),
+      min: Joi.number(),
+      max: Joi.number(),
       odds: Joi.number().required().min(1).max(32),
-    }),).min(2).max(32),
+      winRate: Joi.number().required().min(1).max(75),
+    }),
     timeLimit: Joi.date().required()
   }),
 };

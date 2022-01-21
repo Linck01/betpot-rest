@@ -22,7 +22,7 @@ const memberSchema = mongoose.Schema(
     }
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },
   }
 );
 
@@ -33,8 +33,8 @@ memberSchema.plugin(paginate);
 
 
 /**
- * @typedef GameMember
+ * @typedef Member
  */
-const Member = mongoose.model('GameMember', memberSchema);
+const Member = mongoose.model('Member', memberSchema);
 
 module.exports = Member;

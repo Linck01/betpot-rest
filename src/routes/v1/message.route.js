@@ -7,10 +7,10 @@ const messageController = require('../../controllers/message.controller');
 
 const router = express.Router();
 
-router.get('/', validate(messageValidation.getMessages), messageController.getMessages);
 
 router
   .route('/')
-  .post(auth('manageGames'), validate(messageValidation.createMessage), messageController.createMessage);
+    .get(validate(messageValidation.getMessages), messageController.getMessages)
+    .post(validate(messageValidation.createMessage), messageController.createMessage);
 
 module.exports = router;

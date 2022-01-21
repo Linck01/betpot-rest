@@ -6,17 +6,13 @@ const tipController = require('../../controllers/tip.controller');
 
 const router = express.Router();
 
-router.get('/', validate(tipValidation.getTips), tipController.getTips);
+//router.get('/', validate(tipValidation.getTips), tipController.getTips);
 //router.get('/:tipId', validate(tipValidation.getTip), tipController.getTip);
 
 router
   .route('/')
-  .post(auth('createTip'), validate(tipValidation.createTip), tipController.createTip);
+  .get(validate(tipValidation.getTips), tipController.getTips)
+  .post(validate(tipValidation.createTip), tipController.createTip);
 
-
-router
-  .route('/:tipId')
-  //.patch(auth('manageTips'), validate(tipValidation.updateTip), tipController.updateTip)
-  //.delete(auth('manageTips'), validate(tipValidation.deleteTip), tipController.deleteTip);
 
 module.exports = router;

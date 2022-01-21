@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const { Tip } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { memberService, betService, gameService } = require('./');
+const socket = require('../utils/socket');
 
 /**
  * Create a tip
@@ -9,49 +10,115 @@ const { memberService, betService, gameService } = require('./');
  * @returns {Promise<Tip>}
  */
 const createTip = async (userId,tipBody) => {
-  let member = await memberService.getMemberByGameUserId(tipBody.gameId, userId);
+  let member = await memberService.findOne({userId, gameId: tipBody.gameId});
   
   if(!member)
     member = await memberService.createMember(userId, { gameId: tipBody.gameId })
 
-  console.log('AAAA', member, tipBody);
   if (member.currency < tipBody.currency) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Not enough points to spend.');
   
-  const bet = await betService.getBetById(tipBody.betId);
+  let bet = await betService.getBetById(tipBody.betId);
   if (!bet) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
   
   const game = await gameService.getGameById(tipBody.gameId);
-  if (!bet) 
+  if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
-
-  //await memberService.updateMemberByGameUserId(, { currency: member.currency - tipBody.currency });
-  await memberService.findOneAndUpdate({ gameId: tipBody.gameId, userId }, { $inc: { currency: -tipBody.currency}}, {});
   
+  const randomTipFromUser = await findOne({betId: tipBody.betId, userId });
+  // Reduce currency
+  await memberService.findOneAndUpdate({gameId: tipBody.gameId, userId}, {$inc: {currency: -tipBody.currency}}, {});
+  
+  let tip;
+  if (bet.betType == 'catalogue')
+    tip = await catalogueTipCreate(userId,tipBody);
+  if (bet.betType == 'scale')
+    tip = await scaleTipCreate(userId,tipBody,bet);
+  
+  // Increment bet memberCount (if user has not placed a tip on any answer)
+  if (!randomTipFromUser)
+    await betService.findOneAndUpdate({_id: tipBody.betId}, {$inc: {memberCount : 1}}, {});
+  
+  // Increment bet inPot
+  await betService.findOneAndUpdate({_id: tipBody.betId}, {$inc: {inPot: tipBody.currency}}, {});
 
-  let tip = await getTipByUserBetOption(tipBody.betId,userId,tipBody.optionId);
-  console.log(tip);
-  if (tip) {
-    console.log('incTip', tip.currency, tipBody.currency, tip.currency + tipBody.currency);
-    await findOneAndUpdate({ _id: tip.id }, { $inc: { currency: tipBody.currency }});
+  bet = await betService.getBetById(tipBody.betId);
+  await socket.sendNewTipToGame(tip,bet);
+};
 
-    await betService.findOneAndUpdate({ _id: tipBody.betId }, { $inc: { inPot: tipBody.currency}}, {});
-    return;
+const catalogueTipCreate = async (userId,tipBody) => {
+  // Add/Increment tip
+  const duplicateTip = await findOne({betId: tipBody.betId, userId, answerId: tipBody.answerId });
+
+  let tip;
+  if (duplicateTip) {
+    tip = await findOneAndUpdate({ _id: duplicateTip.id }, { $inc: {currency: tipBody.currency}});
   } else {
-    console.log('newTip');
-    tipBody.userId = userId;
-    await Tip.create(tipBody);
+    // Increment answer memberCount (if user has not placed a tip on that specific answer)
+    const arrMemberCount = {}; arrMemberCount['catalogue_answers.' + tipBody.answerId + '.memberCount'] = 1;
+    await betService.findOneAndUpdate({_id: tipBody.betId}, {$inc: arrMemberCount}, {});
 
-    await betService.findOneAndUpdate({ _id: tipBody.betId }, { $inc: { inPot: tipBody.currency, tipCount : 1}}, {});
+    tipBody.userId = userId;
+    tip = await Tip.create(tipBody);
   }
   
+  // Increment answer inPot
+  const arrInPot = {}; arrInPot['catalogue_answers.' + tipBody.answerId + '.inPot'] = tipBody.currency;
+  await betService.findOneAndUpdate({_id: tipBody.betId}, {$inc: arrInPot}, {});
+
+  return tip;
+};
+
+const scaleTipCreate = async (userId,tipBody,bet) => {
+  // Add/Increment tip
+  const duplicateTip = await findOne({betId: tipBody.betId, userId, answerDecimal: tipBody.answerDecimal});
+  const interval = getInterval(tipBody.answerDecimal, bet);
+  const intervalTip = await findOne({betId: tipBody.betId, userId, answerDecimal: { $gte: interval.from,  $lt: interval.to }});
+
+  let tip;
+  if (duplicateTip) {
+    tip = await findOneAndUpdate({ _id: duplicateTip.id }, { $inc: {currency: tipBody.currency}});
+    tip = await findOne({betId: tipBody.betId, userId, answerDecimal: tipBody.answerDecimal});
+  } else {
+    tipBody.userId = userId;
+    tip = await Tip.create(tipBody);
+  }
+
+  // Increment interval memberCount (if user has not placed a tip on that specific interval)
+  if (!intervalTip) {
+    const arrMemberCount = {}; arrMemberCount['scale_answers.' + interval.index + '.memberCount'] = 1;
+    await betService.findOneAndUpdate({_id: tipBody.betId}, {$inc: arrMemberCount}, {});
+  }
+
+  // Increment interval inPot
+  const arrInPot = {}; arrInPot['scale_answers.' + interval.index + '.inPot'] = tipBody.currency;
+  await betService.findOneAndUpdate({_id: tipBody.betId}, {$inc: arrInPot}, {});
+  
+  console.log('finalTip',tip.currency.toString());
+  return tip;
 };
 
 const findOneAndUpdate = async (filter, update, options) => {
   const tip = Tip.findOneAndUpdate(filter, update, {...options, useFindAndModify: false});
   return tip;
 };
+
+const getInterval = (value,bet) => {
+  let from, to, index;
+
+  for (let i = 0; i < bet.scale_answers.length; i++) {
+    if (value >= parseFloat(bet.scale_answers[i].from.toString())) {
+      
+      index = i;
+      from = parseFloat(bet.scale_answers[i].from.toString());
+      to = parseFloat(bet.scale_answers[i].to.toString());
+    }
+  }
+
+  return { index, from, to };
+};
+
 
 /**
  * Query for tips
@@ -82,9 +149,13 @@ const getTipById = async (id) => {
   return tip;
 };
 
-const getTipByUserBetOption = async (betId, userId, optionId) => {
-  console.log(betId, userId, optionId);
-  const tip = await Tip.findOne({ betId, userId, optionId });
+const findOne = async (filter) => {
+  const tip = await Tip.findOne(filter);
+  return tip;
+};
+
+const getTipByUserBetOption = async (betId, userId, answerId) => {
+  const tip = await Tip.findOne({ betId, userId, answerId });
   return tip;
 };
 

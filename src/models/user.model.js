@@ -39,6 +39,7 @@ const userSchema = mongoose.Schema(
       type: String,
       enum: roles,
       default: 'user',
+      private: true,
     },
     isEmailVerified: {
       type: Boolean,
@@ -46,7 +47,7 @@ const userSchema = mongoose.Schema(
     },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },
   }
 );
 

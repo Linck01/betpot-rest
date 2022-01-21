@@ -6,7 +6,8 @@ const createTip = {
     betId: Joi.custom(objectId),
     gameId: Joi.custom(objectId),
     userId: Joi.custom(objectId),
-    optionId: Joi.number().min(0).max(31),
+    answerId: Joi.number().optional().min(0).max(31),
+    answerDecimal: Joi.number().optional(),
     currency: Joi.number()
   }),
 };
@@ -16,7 +17,7 @@ const getTips = {
     betId: Joi.custom(objectId).optional(),
     gameId: Joi.custom(objectId).optional(),
     userId: Joi.custom(objectId).optional(),
-    optionId: Joi.number().optional(),
+    answerId: Joi.number().min(0).max(31),
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),

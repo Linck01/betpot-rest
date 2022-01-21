@@ -4,10 +4,10 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { memberService } = require('../services');
 
-const createMember = catchAsync(async (req, res) => {
+/*const createMember = catchAsync(async (req, res) => {
   const member = await memberService.createMember(req.user.id,req.body);
   res.status(httpStatus.CREATED).send(member);
-});
+});*/
 
 const getMembers = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['name', 'userId']);
@@ -18,15 +18,12 @@ const getMembers = catchAsync(async (req, res) => {
 });
 
 const getMember = catchAsync(async (req, res) => {
-  const member = await memberService.getMemberById(req.params.memberId);
-  if (!member) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
-  }
-  member.server = memberServer[0];
+  const member = await memberService.getMemberByGameUserId(req.params.gameId,req.params.userId);
   
   res.send(member);
 });
 
+/*
 const updateMember = catchAsync(async (req, res) => {
   const member = await memberService.updateMemberById(req.params.memberId, req.body);
   res.send(member);
@@ -36,11 +33,12 @@ const deleteMember = catchAsync(async (req, res) => {
   await memberService.deleteMemberById(req.params.memberId);
   res.status(httpStatus.NO_CONTENT).send();
 });
+*/
 
 module.exports = {
-  createMember,
+  //createMember,
   getMembers,
   getMember,
-  updateMember,
-  deleteMember,
+  //updateMember,
+  //deleteMember,
 };

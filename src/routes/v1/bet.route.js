@@ -6,17 +6,16 @@ const betController = require('../../controllers/bet.controller');
 
 const router = express.Router();
 
-router.get('/', validate(betValidation.getBets), betController.getBets);
-router.get('/:betId', validate(betValidation.getBet), betController.getBet);
-
 router
   .route('/')
-  .post(auth('createBet'), validate(betValidation.createBet), betController.createBet);
+  .get(validate(betValidation.getBets), betController.getBets)
+  .post(validate(betValidation.createBet), betController.createBet);
 
 
 router
   .route('/:betId')
-  .patch(auth('manageBets'), validate(betValidation.updateBet), betController.updateBet)
-  .delete(auth('manageBets'), validate(betValidation.deleteBet), betController.deleteBet);
+  .get(validate(betValidation.getBet), betController.getBet)
+  //.patch(validate(betValidation.updateBet), betController.updateBet)
+  //.delete(validate(betValidation.deleteBet), betController.deleteBet);
 
 module.exports = router;
