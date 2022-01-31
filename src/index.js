@@ -4,25 +4,39 @@ const app = require('./app');
 const config = require('./config/config');
 const logger = require('./config/logger');
 const socket = require('./utils/socket.js');
+const payout = require('./utils/payout.js');
 
 let server;
 const io = require('socket.io')(server);
 
 
-mongoose.connect(config.mongoose.url, config.mongoose.options).then(() => {
-  logger.info('Connected to MongoDB');
+const initDb = () => {
+  return new Promise(async function (resolve, reject) {
+    mongoose.connect(config.mongoose.url, config.mongoose.options).then(() => {
+      logger.info('Connected to MongoDB');
+      return resolve();
+    });
+  });
+}
+
+const initServer = () => {
+  return new Promise(async function (resolve, reject) {
     server = app.listen(config.port, () => {
       logger.info(`Listening to port ${config.port}`);
-
-
-      const io = require('socket.io')(server);
-      socket.init(io);
-      app.set('socketio', io);
+      return resolve(server);
+    });
   });
-});
+}
 
+const initSocket = () => {
+  return new Promise(async function (resolve, reject) {
+    const io = require('socket.io')(server);
+    socket.init(io);
+    app.set('socketio', io);
 
-
+    return resolve(io);
+  });
+}
 
 const exitHandler = () => {
   if (server) {
@@ -49,3 +63,28 @@ process.on('SIGTERM', () => {
     server.close();
   }
 });
+
+module.exports = (msg,args) => {
+  
+}
+
+
+const init = async () => {
+  await initDb();
+  await initServer();
+  await initSocket();
+
+
+  payout.init();
+}
+
+init();
+
+/* module.exports = (msg,args) => {
+  return new Promise(async function (resolve, reject) {
+    try {
+      
+      resolve();
+    } catch (e) { reject(e); }
+  });
+} */

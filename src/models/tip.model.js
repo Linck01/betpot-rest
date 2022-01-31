@@ -32,6 +32,9 @@ const tipSchema = mongoose.Schema(
       type: mongoose.Decimal128,
       required: true,
       default: 0
+    },
+    diff: {
+      type: mongoose.Decimal128,
     }
   },
   {

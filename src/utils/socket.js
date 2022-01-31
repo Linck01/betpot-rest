@@ -23,6 +23,12 @@ module.exports.sendChatMessageToGame = async (message) => {
     io.to('game:' + message.gameId).emit('chatMessage', message);
 }
 
+module.exports.sendNewBetToGame = async (bet) => {
+    console.log('Sending socket newBet to room ' + bet.gameId);
+
+    io.to('game:' + bet.gameId).emit('newBet', bet);
+}
+
 module.exports.sendNewTipToGame = async (tip,bet) => {
     console.log('Sending socket newTip to room ' + bet.gameId);
 

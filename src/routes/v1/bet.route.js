@@ -14,8 +14,16 @@ router
 
 router
   .route('/:betId')
-  .get(validate(betValidation.getBet), betController.getBet)
+  .get(validate(betValidation.getBet), betController.getBet);
   //.patch(validate(betValidation.updateBet), betController.updateBet)
   //.delete(validate(betValidation.deleteBet), betController.deleteBet);
+
+router
+  .route('/:betId/finalize')
+  .patch(validate(betValidation.finalizeBet), betController.finalizeBet);
+
+router
+  .route('/:betId/abort')
+  .patch(validate(betValidation.abortBet), betController.abortBet);
 
 module.exports = router;

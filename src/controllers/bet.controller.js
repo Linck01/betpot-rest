@@ -13,6 +13,30 @@ const createBet = catchAsync(async (req, res) => {
   res.status(httpStatus.CREATED).send(bet);
 });
 
+const finalizeBet = catchAsync(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized.');
+  }
+
+  let result;
+  if (req.body.answerDecimal)
+    result = req.body.answerDecimal;
+  else if (req.body.answerIds)
+    result = req.body.answerIds;
+
+  await betService.finalizeBet(req.user,req.body.betId,result);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+const abortBet = catchAsync(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized.');
+  }
+
+  await betService.abortBet(req.user.id,req.body.betId);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
 const getBets = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['gameId', 'userId']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
@@ -46,6 +70,8 @@ module.exports = {
   createBet,
   getBets,
   getBet,
+  finalizeBet,
+  abortBet
   //updateBet,
   //deleteBet,
 };

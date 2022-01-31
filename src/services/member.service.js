@@ -74,8 +74,10 @@ const updateMemberById = async (memberId, updateBody) => {
   return member;
 };
 
-const findOneAndUpdate = async (filter, update, options) => {
-  const member = Member.findOneAndUpdate(filter, update, {...options, useFindAndModify: false});
+const increment = async (gameId, userId, field, value) => {
+  const obj = {}; obj[field] = value;
+
+  const member = Member.findOneAndUpdate({gameId, userId}, {$inc: obj}, {useFindAndModify: false});
   return member;
 };
 
@@ -106,6 +108,6 @@ module.exports = {
   deleteMemberById,
   getMemberByGameUserId,
   updateMemberByGameUserId,
-  findOneAndUpdate,
-  findOne
+  findOne,
+  increment
 };

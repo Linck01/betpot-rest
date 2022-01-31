@@ -32,7 +32,21 @@ const betSchema = mongoose.Schema(
       type: mongoose.Decimal128,
       default: 0
     },
+    correctAnswerIds: {
+      type: [Number]
+    },
+    correctAnswerDecimal: {
+      type: mongoose.Decimal128,
+    },
+    isAborted: {
+      type: Boolean,
+      default: false
+    },
     isFinished: {
+      type: Boolean,
+      default: false
+    },
+    isPaid: {
       type: Boolean,
       default: false
     },
@@ -40,11 +54,6 @@ const betSchema = mongoose.Schema(
       type: [{
         title: {
           type: String,
-          required: true
-        },
-        isCorrect: {
-          type: Boolean,
-          default: false,
           required: true
         },
         odds: {
@@ -85,19 +94,11 @@ const betSchema = mongoose.Schema(
           type: Number,
           required: true
         },
-        correct: {
-          type: mongoose.Decimal128,
-          default: false,
-        },
       }
     },
     scale_answers: {
       type: [{
         from: {
-          type: mongoose.Decimal128,
-          required: true
-        },
-        to: {
           type: mongoose.Decimal128,
           required: true
         },

@@ -1,3 +1,4 @@
+
 const express = require('express');
 const helmet = require('helmet');
 const xss = require('xss-clean');
@@ -14,7 +15,6 @@ const routes = require('./routes/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const ApiError = require('./utils/ApiError');
 const auth = require('./middlewares/auth');
-
 const app = express();
 
 if (config.env !== 'test') {

@@ -2,23 +2,83 @@ const httpStatus = require('http-status');
 const { Bet } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { gameService } = require('./');
+const socket = require('../utils/socket');
+
+const finishedUnpaidBets = [];
+
+/**
+ * Finalize bet
+ * @param {Object} 
+ * @returns {Promise<Bet>}
+ */
+ const finalizeBet = async (user,betId,result) => {
+  const bet = await getBetById(betId);
+  if (!bet) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
+
+  const game = await gameService.getGameById(bet.gameId);
+  if (!game)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
+
+  if (game.userId != user.id)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized to finalize a bet for this game.');
+
+  if (bet.isFinished)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet has already been finalized.');
+
+  if (bet.betType == 'catalogue')
+    updateBetById(bet.id,{...bet, isFinished: true, correctAnswerIds: result})
+  if (bet.betType == 'scale')
+    updateBetById(bet.id,{...bet, isFinished: true, correctAnswerDecimal: result})
+  
+  
+  finishedUnpaidBets.push(bet);
+  
+  return;
+};
+
+/**
+ * Abort bet
+ * @param {Object} 
+ * @returns {Promise<Bet>}
+ */
+ const abortBet = async (userId,betId,result) => {
+  const bet = await getBetById(betId);
+  if (!bet) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
+
+  const game = await gameService.getGameById(bet.gameId);
+  if (!game) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
+
+  if (game.userId != userId)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized to finalize a bet for this game.');
+
+    updateBetById(bet.id,{...bet, isAborted: true});
+  return;
+};
 
 /**
  * Create a bet
  * @param {Object} betBody
  * @returns {Promise<Bet>}
  */
-const createBet = async (userId, betBody) => {
+const createBet = async (userId,betBody) => {
   betBody.userId = userId;
 
   const game = await gameService.getGameById(betBody.gameId);
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
+  if (game.userId != userId)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized to create a bet for this game.');
+
   if (betBody.betType == 'scale')
     populateScale_answers(betBody);
 
-  return Bet.create(betBody);
+  const bet = await Bet.create(betBody);
+  await socket.sendNewBetToGame(bet);
+  return;
 };
 
 const populateScale_answers = (betBody) => {
@@ -37,7 +97,7 @@ const populateScale_answers = (betBody) => {
   betBody.scale_answers = [];
 
   for (let i = 0; i < maxFroms; i++)
-    betBody.scale_answers.push({from: min+i*intervalSize, to: min+(i+1)*intervalSize});
+    betBody.scale_answers.push({from: min+i*intervalSize});
   
   return;
 };
@@ -65,6 +125,14 @@ const getBetById = async (id) => {
   return Bet.findById(id);
 };
 
+/**
+ * Get finished unpaid bets
+ * @param {ObjectId} id
+ * @returns {Promise<Bet>}
+ */
+ const getFinishedUnpaidBets = async () => {
+  return Bet.find({isFinished: true, isPaid: false});
+};
 
 /**
  * Get bet by email
@@ -92,10 +160,13 @@ const updateBetById = async (betId, updateBody) => {
   return bet;
 };
 
-const findOneAndUpdate = async (filter, update, options) => {
-  const bet = Bet.findOneAndUpdate(filter, update, {...options, useFindAndModify: false});
+const increment = async (id, field, value) => {
+  const obj = {}; obj[field] = value;
+
+  const bet = Bet.findOneAndUpdate({_id: id}, {$inc: obj}, {useFindAndModify: false});
   return bet;
 };
+
 
 /**
  * Delete bet by id
@@ -118,5 +189,10 @@ module.exports = {
   getBetByEmail,
   updateBetById,
   deleteBetById,
-  findOneAndUpdate
+  finalizeBet,
+  abortBet,
+  getFinishedUnpaidBets,
+  finishedUnpaidBets,
+  increment,
 };
+
