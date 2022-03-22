@@ -15,6 +15,18 @@ const memberSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
+    isModerator: {
+      type: Boolean,
+      default: false
+    },
+    isBanned: {
+      type: Boolean,
+      default: false
+    },
+    isFavoritedGame: {
+      type: Boolean,
+      default: true
+    },
     currency: {
       type: mongoose.Decimal128,
       required: true,

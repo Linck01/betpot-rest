@@ -6,6 +6,7 @@ const register = {
     email: Joi.string().max(255).required().email(),
     password: Joi.string().max(255).required().custom(password),
     username: Joi.string().max(26).required(),
+    captchaToken: Joi.string().max(8192).required()
   }),
 };
 

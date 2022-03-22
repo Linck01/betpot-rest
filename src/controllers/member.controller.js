@@ -10,7 +10,7 @@ const { memberService } = require('../services');
 });*/
 
 const getMembers = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ['name', 'userId']);
+  const filter = pick(req.query, ['name', 'gameId', 'userId', 'isFavoritedGame']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
 
   const result = await memberService.queryMembers(filter, options);
@@ -23,12 +23,13 @@ const getMember = catchAsync(async (req, res) => {
   res.send(member);
 });
 
-/*
+
 const updateMember = catchAsync(async (req, res) => {
-  const member = await memberService.updateMemberById(req.params.memberId, req.body);
+  const member = await memberService.updateMemberByGameUserId(req.params.gameId, req.params.userId, req.body);
   res.send(member);
 });
 
+/*
 const deleteMember = catchAsync(async (req, res) => {
   await memberService.deleteMemberById(req.params.memberId);
   res.status(httpStatus.NO_CONTENT).send();
@@ -39,6 +40,6 @@ module.exports = {
   //createMember,
   getMembers,
   getMember,
-  //updateMember,
+  updateMember,
   //deleteMember,
 };

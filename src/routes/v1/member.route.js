@@ -13,8 +13,7 @@ router
 
 router
   .route('/:gameId/:userId')
-  .get(validate(memberValidation.getGame), memberController.getMember)
-
-
+  .get(validate(memberValidation.getMember), memberController.getMember)
+  .patch(validate(memberValidation.updateMember), memberController.updateMember)
 
 module.exports = router;

@@ -1,22 +1,14 @@
-const httpStatus = require('http-status');
+
 const { Game } = require('../models');
-const ApiError = require('../utils/ApiError');
-const bannerUrls = require('../utils/bannerUrls');
 
 /**
  * Create a game
  * @param {Object} gameBody
  * @returns {Promise<Game>}
  */
-const createGame = async (userId, gameBody) => {
-  if (await Game.isNameTaken(gameBody.title)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Title already taken');
-  }
-
-  gameBody.userId = userId;
-  gameBody.bannerUrl = bannerUrls.getRandom();
-
-  return Game.create(gameBody);
+const createGame = async (gameBody) => {
+  const game = await Game.create(gameBody);
+  return game;
 };
 
 /**
@@ -42,7 +34,6 @@ const getGameById = async (id) => {
   return Game.findById(id);
 };
 
-
 /**
  * Get game by email
  * @param {string} email
@@ -60,12 +51,9 @@ const getGameByEmail = async (email) => {
  */
 const updateGameById = async (gameId, updateBody) => {
   const game = await getGameById(gameId);
-  if (!game) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found');
-  }
-  if (updateBody.email && (await Game.isEmailTaken(updateBody.email, gameId))) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
+  if (!game) 
+    return null;
+  
   Object.assign(game, updateBody);
   await game.save();
   return game;
@@ -78,10 +66,40 @@ const updateGameById = async (gameId, updateBody) => {
  */
 const deleteGameById = async (gameId) => {
   const game = await getGameById(gameId);
-  if (!game) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found');
-  }
+  if (!game) 
+    return null;
+
   await game.remove();
+  return game;
+};
+
+/**
+ * Logs
+ */
+
+const addLog = async (gameId,logType,title,desc) => {
+  const game = await getGameById(gameId);
+  const now = new Date();
+  const newLog = [...game.logs, {logType,title,desc,createdAt: now}];
+
+  trimLog(newLog);
+
+  await updateGameById(game.id,{logs: newLog});
+
+  return;
+};
+
+const trimLog =  (newLog) => {
+  if (newLog.length > 100)
+      newLog.shift();
+
+  return;
+};
+
+const increment = async (id, field, value) => {
+  const obj = {}; obj[field] = value;
+
+  const game = Game.findOneAndUpdate({_id: id}, {$inc: obj}, {useFindAndModify: false});
   return game;
 };
 
@@ -92,4 +110,6 @@ module.exports = {
   getGameByEmail,
   updateGameById,
   deleteGameById,
+  addLog,
+  increment
 };

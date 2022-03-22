@@ -42,7 +42,7 @@ const betSchema = mongoose.Schema(
       type: Boolean,
       default: false
     },
-    isFinished: {
+    isSolved: {
       type: Boolean,
       default: false
     },

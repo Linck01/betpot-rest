@@ -50,7 +50,8 @@
     "validator": "^13.0.0",
     "winston": "^3.2.1",
     "xss-clean": "^0.1.1",
-    "socket.io": "*"
+    "socket.io": "^4.4.1",
+    "hcaptcha": "^0.1.1"
   },
   "devDependencies": {
     "coveralls": "^3.0.7",

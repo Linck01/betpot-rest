@@ -51,7 +51,6 @@ const addUsersToArray = async (arr) => {
   return arr;
 };
 
-
 /**
  * Get user by email
  * @param {string} email
@@ -94,6 +93,13 @@ const deleteUserById = async (userId) => {
   return user;
 };
 
+const increment = async (id, field, value) => {
+  const obj = {}; obj[field] = value;
+
+  const user = User.findOneAndUpdate({_id: id}, {$inc: obj}, {useFindAndModify: false});
+  return user;
+};
+
 module.exports = {
   createUser,
   queryUsers,
@@ -102,4 +108,5 @@ module.exports = {
   updateUserById,
   deleteUserById,
   addUsersToArray,
+  increment,
 };

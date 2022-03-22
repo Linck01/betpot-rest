@@ -45,6 +45,20 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    captchaTicker: {
+      type: Number,
+      default: 0
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    /*lastResetPasswordEmail: {
+      type: Date,
+    },
+    resetPasswordCode: {
+      type: String,
+    },*/
   },
   {
     timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },

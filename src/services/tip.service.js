@@ -1,106 +1,18 @@
 const httpStatus = require('http-status');
 const { Tip } = require('../models');
 const ApiError = require('../utils/ApiError');
-const { memberService, betService, gameService } = require('./');
-const socket = require('../utils/socket');
-
 
 /**
  * Create a tip
  * @param {Object} tipBody
  * @returns {Promise<Tip>}
  */
-const createTip = async (userId,tipBody) => {
-  let member = await memberService.findOne({userId, gameId: tipBody.gameId});
-  
-  if(!member)
-    member = await memberService.createMember(userId, { gameId: tipBody.gameId })
-
-  if (member.currency < tipBody.currency) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Not enough points to spend.');
-
-  if (tipBody.currency <= 0) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Currency must be greater than 0.');
-  
-  let bet = await betService.getBetById(tipBody.betId);
-  if (!bet) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
-  
-  const game = await gameService.getGameById(tipBody.gameId);
-  if (!game) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
-  
-  const randomTipFromUser = await findOne({betId: tipBody.betId, userId });
-  // Reduce currency
-  await memberService.increment(tipBody.gameId,userId,'currency', -tipBody.currency);
-  
-  let tip;
-  if (bet.betType == 'catalogue')
-    tip = await catalogueTipCreate(userId,tipBody);
-  if (bet.betType == 'scale')
-    tip = await scaleTipCreate(userId,tipBody,bet);
-  
-  // Increment bet memberCount (if user has not placed a tip on any answer)
-  if (!randomTipFromUser)
-    await betService.increment(tipBody.betId,'memberCount',1);
-  
-  // Increment bet inPot
-  await betService.increment(tipBody.betId, 'inPot', tipBody.currency);
-
-  bet = await betService.getBetById(tipBody.betId);
-  await socket.sendNewTipToGame(tip,bet);
-};
-
-const catalogueTipCreate = async (userId,tipBody) => {
-  // Add/Increment tip
-  const duplicateTip = await findOne({betId: tipBody.betId, userId, answerId: tipBody.answerId });
-
-  let tip;
-  if (duplicateTip) {
-    await increment(duplicateTip.id,'currency',tipBody.currency);
-    tip = await findOne({betId: tipBody.betId, userId, answerId: tipBody.answerId });
-  } else {
-    // Increment answer memberCount (if user has not placed a tip on that specific answer)
-    await betService.increment(tipBody.betId,'catalogue_answers.' + tipBody.answerId + '.memberCount', 1);
-
-    tipBody.userId = userId;
-    tip = await Tip.create(tipBody);
-  }
-  
-  // Increment answer inPot
-  await betService.increment(tipBody.betId,'catalogue_answers.' + tipBody.answerId + '.inPot', tipBody.currency);
-
+const createTip = async (tipBody) => {
+  tip = await Tip.create(tipBody);
   return tip;
 };
 
-const scaleTipCreate = async (userId,tipBody,bet) => {
-  // Add/Increment tip
-  const duplicateTip = await findOne({betId: tipBody.betId, userId, answerDecimal: tipBody.answerDecimal});
-  const interval = getInterval(tipBody.answerDecimal, bet.scale_answers);
 
-  const intervalFilter = interval.to ? { $gte: interval.from,  $lt: interval.to } : { $gte: interval.from };
-  const intervalTip = await findOne({betId: tipBody.betId, userId, answerDecimal: intervalFilter});
-
-  let tip;
-  if (duplicateTip) {
-    await increment(duplicateTip.id,'currency',tipBody.currency);
-    tip = await findOne({betId: tipBody.betId, userId, answerDecimal: tipBody.answerDecimal});
-  } else {
-    tipBody.userId = userId;
-    tip = await Tip.create(tipBody);
-  }
-
-  // Increment interval memberCount (if user has not placed a tip on that specific interval)
-  if (!intervalTip) {
-    await betService.increment(tipBody.betId,'scale_answers.' + interval.index + '.memberCount', 1);
-  }
-
-  // Increment interval inPot
-  await betService.increment(tipBody.betId, 'scale_answers.' + interval.index + '.inPot', tipBody.currency);
-  
-  console.log('finalTip',tip.currency.toString());
-  return tip;
-};
 
 const increment = async (id, field, value) => {
   const obj = {}; obj[field] = value;
@@ -108,25 +20,6 @@ const increment = async (id, field, value) => {
   const tip = Tip.findOneAndUpdate({_id: id}, {$inc: obj}, {useFindAndModify: false});
   return tip;
 };
-
-const getInterval = (value,scale_answers) => {
-  let from, to, index;
-
-  for (let i = 0; i < scale_answers.length; i++) {
-    if (value >= parseFloat(scale_answers[i].from.toString())) {
-      
-      index = i;
-      from = parseFloat(scale_answers[i].from.toString());
-      if (scale_answers[i+1])
-        to = parseFloat(scale_answers[i+1].from.toString());
-      else
-        to = null;
-    }
-  }
-
-  return { index, from, to };
-};
-
 
 /**
  * Query for tips
@@ -221,5 +114,7 @@ module.exports = {
   updateTipById,
   deleteTipById,
   getTipByUserBetOption,
-  getTipsByBetIdLean
+  getTipsByBetIdLean,
+  findOne,
+  increment
 };

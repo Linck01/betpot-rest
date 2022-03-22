@@ -35,7 +35,7 @@ const tipSchema = mongoose.Schema(
     },
     diff: {
       type: mongoose.Decimal128,
-    }
+    },
   },
   {
     timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },

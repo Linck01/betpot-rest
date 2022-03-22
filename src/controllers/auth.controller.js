@@ -1,9 +1,17 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService } = require('../services');
+const fct = require('../utils/fct');
+const config = require('../config/config');
+const ApiError = require('../utils/ApiError');
+const { verify } = require('hcaptcha');
 
 const register = catchAsync(async (req, res) => {
   console.log(req.body);
+  const captcha = await verify(config.captchaSecret,req.body.captchaToken);
+  if (!captcha.success)
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
+
   const user = await userService.createUser(req.body);
   const tokens = await tokenService.generateAuthTokens(user);
   res.status(httpStatus.CREATED).send({ user, tokens });
@@ -26,14 +34,36 @@ const refreshTokens = catchAsync(async (req, res) => {
   res.send({ ...tokens });
 });
 
-const forgotPassword = catchAsync(async (req, res) => {
-  const resetPasswordToken = await tokenService.generateResetPasswordToken(req.body.email);
-  await emailService.sendResetPasswordEmail(req.body.email, resetPasswordToken);
+/*
+const resetPassword = catchAsync(async (req, res) => {
+  await authService.resetPassword(req.query.token, req.body.password);
   res.status(httpStatus.NO_CONTENT).send();
 });
 
+const forgotPassword = catchAsync(async (req, res) => {
+  const user = await userService.getUserByEmail(req.body.email);
+  if (!user)
+    throw new ApiError(httpStatus.NOT_FOUND, 'No user with that email.');
+  
+  if (fct.getTimeDifferenceToNow(user.lastResetPasswordEmail) < 3600*24)
+    throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Please wait to request another password reset.');
+
+  const resetPasswordCode = fct.randomString(20);
+  await userService.updateUserById(user.id, {resetPasswordCode});
+
+  await emailService.sendResetPasswordEmail(user, resetPasswordCode);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+/*
 const resetPassword = catchAsync(async (req, res) => {
   await authService.resetPassword(req.query.token, req.body.password);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+const forgotPassword = catchAsync(async (req, res) => {
+  const resetPasswordToken = await tokenService.generateResetPasswordToken(req.body.email);
+  await emailService.sendResetPasswordEmail(req.body.email, resetPasswordToken);
   res.status(httpStatus.NO_CONTENT).send();
 });
 
@@ -48,13 +78,15 @@ const verifyEmail = catchAsync(async (req, res) => {
   res.status(httpStatus.NO_CONTENT).send();
 });
 
+
+*/
 module.exports = {
   register,
   login,
   logout,
   refreshTokens,
-  forgotPassword,
-  resetPassword,
-  sendVerificationEmail,
-  verifyEmail,
+  //forgotPassword,
+  //resetPassword,
+  //sendVerificationEmail,
+  //verifyEmail,
 };

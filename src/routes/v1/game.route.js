@@ -17,7 +17,7 @@ router
 router
   .route('/:gameId')
   .get(validate(gameValidation.getGame), gameController.getGame)
-  //.patch(auth('manageGames'), validate(gameValidation.updateGame), gameController.updateGame)
+  .patch(validate(gameValidation.updateGame), gameController.updateGame)
   //.delete(auth('manageGames'), validate(gameValidation.deleteGame), gameController.deleteGame);
 
 module.exports = router;

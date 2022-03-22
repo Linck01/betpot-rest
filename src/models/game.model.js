@@ -39,26 +39,51 @@ const gameSchema = mongoose.Schema(
       trim: true,
       default: ''
     },
-    moderators: {
-      type: [mongoose.SchemaTypes.ObjectId],
-      default: []
-    },
-    isFinished: {
+    isEnded: {
       type: Boolean,
       default: false
     },
-    totalBets: {
+    isPublic: {
+      type: Boolean,
+      default: true
+    },
+    betCount: {
       type: Number,
       default: 0
     },
-    totalMembers: {
+    memberCount: {
+      type: Number,
+      default: 0
+    },
+    betCount: {
       type: Number,
       default: 0
     },
     startCurrency: {
       type: mongoose.Decimal128,
       default: 1000
-    }
+    },
+    logs: {
+      type: [{
+        logType: {
+          type: String,
+          required: true
+        },
+        title: {
+          type: String,
+          required: true
+        },
+        desc: {
+          type: String,
+          required: true
+        },
+        createdAt: {
+          type: Date,
+          required: true,
+        }
+      }],
+      default: []
+    },
   },
   {
     timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },

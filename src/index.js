@@ -4,11 +4,10 @@ const app = require('./app');
 const config = require('./config/config');
 const logger = require('./config/logger');
 const socket = require('./utils/socket.js');
-const payout = require('./utils/payout.js');
+const scheduler = require('./cron/scheduler.js');
 
 let server;
 const io = require('socket.io')(server);
-
 
 const initDb = () => {
   return new Promise(async function (resolve, reject) {
@@ -64,18 +63,12 @@ process.on('SIGTERM', () => {
   }
 });
 
-module.exports = (msg,args) => {
-  
-}
-
 
 const init = async () => {
   await initDb();
   await initServer();
   await initSocket();
-
-
-  payout.init();
+  await scheduler.init();
 }
 
 init();

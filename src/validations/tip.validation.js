@@ -8,7 +8,7 @@ const createTip = {
     userId: Joi.custom(objectId),
     answerId: Joi.number().optional().min(0).max(31),
     answerDecimal: Joi.number().optional(),
-    currency: Joi.number()
+    currency: Joi.number().min(0.01).max(1000000000)
   }),
 };
 

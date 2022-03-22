@@ -8,12 +8,7 @@ const { gameService } = require('./');
  * @param {Object} memberBody
  * @returns {Promise<Member>}
  */
-const createMember = async (userId, memberBody) => {
-  memberBody.userId = userId;
-
-  const game = await gameService.getGameById(memberBody.gameId);
-  memberBody.currency = game.startCurrency;
-
+const createMember = async (memberBody) => {
   return Member.create(memberBody);
 };
 
@@ -31,13 +26,11 @@ const queryMembers = async (filter, options) => {
   return members;
 };
 
-
 const getMemberByGameUserId = async (gameId, userId) => {
   const member = Member.findOne({userId, gameId});
 
   return member;
 };
-
 
 /**
  * Update member by gameId + userId
@@ -55,7 +48,6 @@ const getMemberByGameUserId = async (gameId, userId) => {
   await member.save();
   return member;
 };
-
 
 /**
  * Update member by id
@@ -106,7 +98,6 @@ module.exports = {
   getMemberByGameUserId,
   updateMemberById,
   deleteMemberById,
-  getMemberByGameUserId,
   updateMemberByGameUserId,
   findOne,
   increment

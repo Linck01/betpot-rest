@@ -11,9 +11,12 @@ const getGames = {
   query: Joi.object().keys({
     name: Joi.string().allow('').optional(),
     userId: Joi.custom(objectId).allow('').optional(),
+    ids: Joi.array().optional(),
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),
+    isEnded: Joi.boolean().optional(),
+    isPublic: Joi.boolean().optional()
   }),
 };
 
@@ -24,16 +27,15 @@ const getGame = {
 };
 
 const updateGame = {
-  params: Joi.object().keys({
-    userId: Joi.required().custom(objectId),
-  }),
-  body: Joi.object()
-    .keys({
-      email: Joi.string().email(),
-      password: Joi.string().custom(password),
-      name: Joi.string(),
+  body: Joi.object().keys({
+      title: Joi.string().max(128),
+      desc: Joi.string().max(4096).allow(''),
+      isPublic: Joi.boolean(),
+      isEnded: Joi.boolean(),
+      startCurrency: Joi.number(),
+      currencyName: Joi.string().max(32),
+      bannerUrl: Joi.string().max(4096)
     })
-    .min(1),
 };
 
 const deleteGame = {
