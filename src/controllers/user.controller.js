@@ -27,7 +27,7 @@ const getUsers = catchAsync(async (req, res) => {
 
 
 const getUser = catchAsync(async (req, res) => {
-  const user = await userService.getUserById(req.params.userId, {username: 1});
+  const user = await userService.getUserById(req.params.userId, {username: true, captchaTicker: true});
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -36,7 +36,18 @@ const getUser = catchAsync(async (req, res) => {
 
 
 const updateUser = catchAsync(async (req, res) => {
-  const user = await userService.updateUserById(req.params.userId, req.body);
+  if (!req.user || req.user.id != req.params.userId)
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
+
+  let updateBody = {};
+  if (req.body.password) {
+    if (!(await req.user.isPasswordMatch(req.body.password)))
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+    
+      updateBody.password = req.body.newPassword;
+  }
+  
+  const user = await userService.updateUserById(req.params.userId, updateBody);
   res.send(user);
 });
 

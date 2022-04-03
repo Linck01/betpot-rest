@@ -7,7 +7,6 @@ const ApiError = require('../utils/ApiError');
 const { verify } = require('hcaptcha');
 
 const register = catchAsync(async (req, res) => {
-  console.log(req.body);
   const captcha = await verify(config.captchaSecret,req.body.captchaToken);
   if (!captcha.success)
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');

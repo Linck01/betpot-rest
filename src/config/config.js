@@ -29,6 +29,7 @@ const envVarsSchema = Joi.object()
     EMAIL_FROM: Joi.string().description('the from field in the emails sent by the app'),
     APP_URL: Joi.string().required().description('Link to website'),
     CAPTCHA_SECRET: Joi.string().required().description('Captcha secret key'),
+    CAPTCHA_TICKER_INTERVAL: Joi.string().required().description('Captcha interval.'),
   })
   .unknown();
 
@@ -72,5 +73,6 @@ module.exports = {
     from: envVars.EMAIL_FROM,
   },
   appUrl: envVars.APP_URL,
-  captchaSecret: envVars.CAPTCHA_SECRET
+  captchaSecret: envVars.CAPTCHA_SECRET,
+  captchaTickerInterval: envVars.CAPTCHA_TICKER_INTERVAL
 };

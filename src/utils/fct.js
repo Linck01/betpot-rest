@@ -10,8 +10,6 @@ module.exports.sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
-
 module.exports.randomString = (length) => {
     const characters ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = ' ';
@@ -24,19 +22,18 @@ module.exports.randomString = (length) => {
     return result;
 }
 
-/*
-module.exports.getTimeDifferenceToNow = (timeStr) => {
-    const now = Date.now();
-    const to = (new Date(timeStr)).getTime();
-
-    return now - to;
-}
-
-/*
 module.exports.getTimeDifference = (start,end) => {
-    start = (new Date(start)).getTime();
-    end = (new Date(end)).getTime();
+    const startDate = (new Date(start)).getTime();
+    const endDate = (new Date(end)).getTime();
 
-    return end - start;
+    return (endDate - startDate) / 1000;
 }
-*/
+
+
+module.exports.getTimeDifferenceToNow = (time) => {
+    const nowDate = Date.now();
+    const toDate = (new Date(time)).getTime();
+
+    return (nowDate - toDate) / 1000;
+}
+

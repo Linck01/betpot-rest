@@ -12,8 +12,6 @@ const createTip = async (tipBody) => {
   return tip;
 };
 
-
-
 const increment = async (id, field, value) => {
   const obj = {}; obj[field] = value;
 

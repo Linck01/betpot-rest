@@ -13,8 +13,8 @@ router
 
 router
   .route('/:userId')
-  .get(validate(userValidation.getUser), userController.getUser);
-  //.patch(auth('manageUsers'), validate(userValidation.updateUser), userController.updateUser);
+  .get(validate(userValidation.getUser), userController.getUser)
+  .patch(auth('manageUsers'), validate(userValidation.updateUser), userController.updateUser);
 
 //router.route('/me')
 //.get(auth(), validate(userValidation.getMe), userController.getUserByJWT);

@@ -1,17 +1,25 @@
 const httpStatus = require('http-status');
 const pick = require('../utils/pick');
+const fct = require('../utils/fct');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { tipService, betService, gameService, memberService, userService } = require('../services');
 const socket = require('../utils/socket');
-
-const tipServer = [
-  '10.0.0.3'
-]
+const { verify } = require('hcaptcha');
+const config = require('../config/config');
 
 const createTip = catchAsync(async (req, res) => {
   if (!req.user) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized.');
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
+
+  if (req.user.captchaTicker % config.captchaTickerInterval == 0) {
+    if (!req.body.captchaToken)
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
+
+    const captcha = await verify(config.captchaSecret,req.body.captchaToken);
+    if (!captcha.success)
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
+  }
   
   const tipBody = req.body;
   tipBody.userId = req.user.id;
@@ -23,18 +31,21 @@ const createTip = catchAsync(async (req, res) => {
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
   
+  if (fct.getTimeDifferenceToNow(bet.timeLimit) > 0 || bet.isSolved || bet.isAborted)
+    throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Cannot add tip - Bet has ended, is solved or was aborted.');
+
   let member = await memberService.findOne({userId: tipBody.userId, gameId: tipBody.gameId});
   if(!member)
     member = await memberService.createMember({ gameId: tipBody.gameId, userId: tipBody.userId, currency: game.startCurrency })
 
   if (member.currency < tipBody.currency) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Not enough points to spend.');
+    throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Not enough points to spend.');
 
   if (tipBody.currency <= 0) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'Currency must be greater than 0.');
+    throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Currency must be greater than 0.');
 
   const randomTipFromUser = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId });
-  // Reduce currency
+  // Decrement currency
   await memberService.increment(tipBody.gameId,tipBody.userId,'currency', -tipBody.currency);
   
   let tip;
@@ -106,7 +117,6 @@ const scaleTipCreate = async (tipBody,bet) => {
   // Increment interval inPot
   await betService.increment(tipBody.betId, 'scale_answers.' + interval.index + '.inPot', tipBody.currency);
   
-  console.log('finalTip',tip.currency.toString());
   return tip;
 };
 
