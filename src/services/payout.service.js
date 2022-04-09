@@ -17,10 +17,14 @@ const removeFromQueue = (betId) => {
 
 const processNextBet = async () => {
   if (betQueue.length > 0) {
-    console.log('processNextBet ' + betQueue[0].id);
     const nextBet = betQueue[0];
+    console.log('Started payout for bet ' + nextBet.id + '.');
+    
     try {
-        await processBet(nextBet);
+        const settlement = await getSettlement(nextBet);
+        removeFromQueue(nextBet.id);
+        await payoutBet(nextBet, settlement);
+        console.log('Successfully paid out bet ' + nextBet.id + '.');
     } catch (e) { 
         console.log(e);
         removeFromQueue(nextBet.id);
@@ -28,54 +32,50 @@ const processNextBet = async () => {
   }
 }
 
-const processBet = async (bet) => {
-  console.log('Payout started for bet ' + bet.id);
-
-  const sort = await getAndSortTips(bet);
-  await setPossibleGainAndLoss(bet, sort);
-  await setActualGainAndLoss(sort);
-  console.log('sort',util.inspect(sort,{showHidden: false, depth: 3, colors: true}));
-
-  removeFromQueue(bet.id);
-  await payoutBet(bet, extractTipsFromSort(sort));
-  return;
+const getSettlement = async (bet) => {
+  const settlement = await getAndSortTips(bet);
+  await setPossibleGainAndLoss(bet, settlement);
+  await setActualGainAndLoss(settlement);
+  //console.log('settlement',util.inspect(settlement,{showHidden: false, depth: 3, colors: true}));
+  
+  return settlement;
 }
 
-const payoutBet = async (bet,tips) => {
-  const session = await mongoose.startSession();
+const payoutBet = async (bet,settlement) => {
+    const session = await mongoose.startSession();
 
-  try {
-      session.startTransaction();                    
-      //console.log(bet,tips);
-      const bulkWriteMemberRequest = [],bulkWriteTipRequest = [];
+    try {
+        session.startTransaction();
+        const tips = extractTipsFromSettlement(settlement);
+        
+        //console.log(bet,tips);
+        const bulkWriteMemberRequest = [],bulkWriteTipRequest = [];
+        for (let tip of tips) {
+            bulkWriteMemberRequest.push({updateOne:{filter: {gameId: bet.gameId,userId: tip.userId}, update: {$inc: {currency: tip.inc}}}});
+            bulkWriteTipRequest.push({updateOne: {filter: {_id: tip._id}, update: {diff: tip.diff}}});
+        }
 
-      for (let tip of tips) {
-        bulkWriteMemberRequest.push({updateOne:{filter: {gameId: bet.gameId,userId: tip.userId}, update: {$inc: {currency: tip.inc}}}});
-        bulkWriteTipRequest.push({updateOne: {filter: {_id: tip._id}, update: {diff: tip.diff}}});
-      }
+        //console.log(bulkWriteTipRequest);
+        await Tip.bulkWrite(bulkWriteTipRequest);
+        await Member.bulkWrite(bulkWriteMemberRequest);
+        //await Bet.updateOne({_id: bet.id},{isPaid: true});
 
-      //console.log(bulkWriteTipRequest);
-      await Tip.bulkWrite(bulkWriteTipRequest);
-      await Member.bulkWrite(bulkWriteMemberRequest);
-      //await Bet.updateOne({_id: bet.id},{isPaid: true});
-      
-      const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-      await gameService.addLog(bet.gameId,'betPaidOut','Bet paid out','Bet "' + betTitle + '" was solved & redistributed.');
-      
-      await session.commitTransaction();
+        const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
+        await gameService.addLog(bet.gameId,'betPaidOut','Bet paid out','Bet "' + betTitle + '" was solved & redistributed.');
 
-      console.log('Successfully paid out bet ' + bet.id + '.');
-  } catch (e) {
-      console.log(e);
-      await session.abortTransaction();
-  }
+        await session.commitTransaction();
+        session.endSession();
+    } catch (e) {
+        await session.abortTransaction();
+        session.endSession();
+        throw new Error('PayoutBet error: ' + e);
+    }
 
-  session.endSession();
-  return;
+    return;
 };
 
-const extractTipsFromSort = (sort) => {
-  const stacks = sort.winners.stacks.concat(sort.losers.stacks);
+const extractTipsFromSettlement = (settlement) => {
+  const stacks = settlement.winners.stacks.concat(settlement.losers.stacks);
   const tips = [];
 
   for (let stack of stacks)
@@ -85,8 +85,8 @@ const extractTipsFromSort = (sort) => {
   return tips;
 }
 
-const setActualGainAndLoss = async (sort) => {
-  const { winners, losers } = sort;
+const setActualGainAndLoss = async (settlement) => {
+  const { winners, losers } = settlement;
   let totalGainsAndLosses = 0;
 
   if (winners.possibleGain <= 0 || losers.possibleLoss <= 0){
@@ -163,7 +163,7 @@ const getAndSortTips = async (bet) => {
 
           if (!isWinner && lastStackIsWinner && stack.proximity == lastStack.proximity) {
               isWinner = true;
-              console.log(stack.answer,lastStack.answer,stack.proximity, lastStack.proximity);
+              //console.log(stack.answer,lastStack.answer,stack.proximity, lastStack.proximity);
           }
 
           lastStackIsWinner = isWinner;
@@ -180,7 +180,7 @@ const getAndSortTips = async (bet) => {
 }
 
 const sortProximity = async (stacks,correctAnswerDecimal) => {
-  console.log(correctAnswerDecimal);
+  //console.log(correctAnswerDecimal);
   for (let stack of stacks)
       stack.proximity = Math.abs(stack.answer - correctAnswerDecimal);
 
@@ -191,9 +191,9 @@ const sortProximity = async (stacks,correctAnswerDecimal) => {
 
 }
 
-const setPossibleGainAndLoss = async (bet,sort) => {
+const setPossibleGainAndLoss = async (bet,settlement) => {
   let possibleGainSum = 0, sumSum = 0;
-  const { winners, losers } = sort;
+  const { winners, losers } = settlement;
 
   for (let stack of winners.stacks) {
       if(bet.betType == 'catalogue') 
@@ -218,38 +218,7 @@ const setPossibleGainAndLoss = async (bet,sort) => {
   losers.possibleLoss = possibleLossSum;
 }
 
-/*
-const getAndSortTips = async (bet) => {
-  let tips,tipsRes;
-  let currentPage = 1;
-  const sort = [];
-  let answerField;
-  let answer;
-  
-
-  while (!tipsRes || currentPage <= tipsRes.totalPages)  {
-      tipsRes = await tipService.queryTips({betId: bet.id},{limit: batchSize, page: currentPage});
-
-      for (let tip of tipsRes.results) {
-          if (bet.betType == 'catalogue') answer = tip.answerId;
-          if (bet.betType == 'scale') answer = tip.answerDecimal.toString();
-
-          if (!sort.find(t => t.answer == answer))
-              sort.push({answer: answer,tips:[]});
-          
-          const answerPot = sort.find(t => t.answer == answer);
-          answerPot.tips.push(tip);
-      }
-
-      currentPage++;
-  }
-
-  return sort;
-}
-*/
-
 module.exports = {
   processNextBet,
-  addToQueue,
-  betQueue
+  addToQueue
 };

@@ -50,6 +50,7 @@ const betSchema = mongoose.Schema(
       type: Boolean,
       default: false
     },
+    
     catalogue_answers: {
       type: [{
         title: {

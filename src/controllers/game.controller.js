@@ -5,10 +5,6 @@ const catchAsync = require('../utils/catchAsync');
 const { gameService } = require('../services');
 const bannerUrls = require('../utils/bannerUrls');
 
-const gameServer = [
-  '10.0.0.3'
-]
-
 const createGame = catchAsync(async (req, res) => {
   if (!req.user) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized.');
@@ -43,7 +39,6 @@ const getGame = catchAsync(async (req, res) => {
   if (!game) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found');
   }
-  game.server = gameServer[0];
   
   res.send(game);
 });

@@ -123,9 +123,42 @@ const scaleTipCreate = async (tipBody,bet) => {
 const getTips = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['betId', 'userId']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
-
   const result = await tipService.queryTips(filter, options);
+
+  console.log('SSSSSSSSSSSSSSSSSSSSSSSSSSSS',result);
   res.send(result);
+  
+  /*res.send({
+       results: [
+         {
+           currency: 20,
+           _id: '624f4a0596ef280022ae9934',
+           betId: '624f488a96ef280022ae98cd',
+           userId: '624f496c96ef280022ae98fa',
+           gameId: '624f485e96ef280022ae98bb',
+           answerId: 1,
+           _createdAt: '2022-04-07T20:31:01.417Z',
+           _updatedAt: '2022-04-07T20:31:01.417Z',
+           __v: 0
+         },
+         {
+           currency: 11,
+           _id: '624f48bf96ef280022ae98ec',
+           betId: '624f488a96ef280022ae98cd',
+           userId: '624f47ba96ef280022ae98ab',
+           gameId: '624f485e96ef280022ae98bb',
+           answerId: 0,
+           _createdAt: '2022-04-07T20:25:35.186Z',
+           _updatedAt: '2022-04-07T20:25:35.186Z',
+           __v: 0
+         }
+       ],
+       page: 1,
+       limit: 8,
+       totalPages: 1,
+       totalResults: 2,
+       test: 'test2'
+     });*/
 });
 
 
