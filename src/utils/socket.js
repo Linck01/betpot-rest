@@ -29,16 +29,22 @@ module.exports.sendNewBetToGame = async (bet) => {
     io.to('game:' + bet.gameId).emit('newBet', bet);
 }
 
+module.exports.sendUpdateBetToGame = async (bet) => {
+    console.log('Sending updateBet to room game:' + bet.gameId);
+
+    io.to('game:' + bet.gameId).emit('updateBet', bet);
+}
+
 module.exports.sendNewTipToGame = async (tip,bet,member) => {
     console.log('Sending socket newTip to room game:' + bet.gameId);
     
     io.to('game:' + bet.gameId).emit('newTip', {tip, bet, member});
 }
 
-module.exports.sendPaidOutToGame = async (bet,tips) => {
-    console.log('Sending socket paidout to room game:' + bet.gameId);
+module.exports.sendUpdateTipsToGame = async (bet,tips) => {
+    console.log('Sending socket updateTips to room game:' + bet.gameId);
 
-    io.to('game:' + bet.gameId).emit('betPaidout', {bet, tips});
+    io.to('game:' + bet.gameId).emit('updateTips', {bet, tips});
 }
 
 

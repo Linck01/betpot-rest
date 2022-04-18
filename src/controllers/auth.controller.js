@@ -33,24 +33,36 @@ const refreshTokens = catchAsync(async (req, res) => {
   res.send({ ...tokens });
 });
 
-/*
-const resetPassword = catchAsync(async (req, res) => {
-  await authService.resetPassword(req.query.token, req.body.password);
-  res.status(httpStatus.NO_CONTENT).send();
-});
-
 const forgotPassword = catchAsync(async (req, res) => {
   const user = await userService.getUserByEmail(req.body.email);
   if (!user)
     throw new ApiError(httpStatus.NOT_FOUND, 'No user with that email.');
   
-  if (fct.getTimeDifferenceToNow(user.lastResetPasswordEmail) < 3600*24)
-    throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Please wait to request another password reset.');
+  const secondsToLastReset = fct.getTimeDifferenceToNow(user.lastResetPasswordEmail);
+  if (secondsToLastReset < 3600)
+    throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Please wait ' + Math.ceil((3600 - secondsToLastReset)/60) + 'm to request another password reset.');
 
   const resetPasswordCode = fct.randomString(20);
   await userService.updateUserById(user.id, {resetPasswordCode});
+  
+  await userService.updateUserById(user.id, {lastResetPasswordEmail: Date.now()});
+  await emailService.sendForgotPasswordEmail(user, resetPasswordCode);
 
-  await emailService.sendResetPasswordEmail(user, resetPasswordCode);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+const resetPassword = catchAsync(async (req, res) => {
+  const user = await userService.getUserById(req.body.userId);
+  if (!user)
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
+
+  if (user.resetPasswordCode != req.body.code)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Wrong reset code.');
+
+  const newPassword = fct.randomString(12);
+  await userService.updateUserById(user.id, { password: newPassword });
+  await emailService.sendResetPasswordEmail(user, newPassword);
+  await userService.updateUserById(user.id, { resetPasswordCode: '' });
   res.status(httpStatus.NO_CONTENT).send();
 });
 
@@ -84,8 +96,8 @@ module.exports = {
   login,
   logout,
   refreshTokens,
-  //forgotPassword,
-  //resetPassword,
+  forgotPassword,
+  resetPassword,
   //sendVerificationEmail,
   //verifyEmail,
 };

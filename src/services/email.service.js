@@ -29,22 +29,32 @@ const sendEmail = async (to, subject, text) => {
  * @param {string} token
  * @returns {Promise}
  */
-const sendResetPasswordEmail = async (user, resetPasswordCode) => {
+const sendForgotPasswordEmail = async (user, resetPasswordCode) => {
   const subject = 'Reset password';
-  // replace this url with the link to the reset password page of your front-end app
   const resetPasswordUrl = `${config.appUrl}/reset-password?userId=${user.id}&code=${resetPasswordCode}`;
   const text = `Dear user,
-To reset your password, click on this link: ${resetPasswordUrl}
-If you did not request any password resets, then ignore this email.`;
+    To reset your password, click on this link: ${resetPasswordUrl}
+    If you did not request any password resets, then ignore this email.`;
+
   await sendEmail(user.email, subject, text);
 };
+
+const sendResetPasswordEmail = async (user, newPassword) => {
+  const subject = 'New password';
+  const text = `Dear user,
+    Your password for ${config.appUrl} has been reset: ${newPassword}
+    Please log in and use the user section to change it to a new Password.`;
+
+  await sendEmail(user.email, subject, text);
+};
+
 
 /**
  * Send verification email
  * @param {string} to
  * @param {string} token
  * @returns {Promise}
- */
+
 const sendVerificationEmail = async (to, token) => {
   const subject = 'Email Verification';
   // replace this url with the link to the email verification page of your front-end app
@@ -54,10 +64,11 @@ To verify your email, click on this link: ${verificationEmailUrl}
 If you did not create an account, then ignore this email.`;
   await sendEmail(to, subject, text);
 };
-
+ */
 module.exports = {
   transport,
   sendEmail,
+  sendForgotPasswordEmail,
   sendResetPasswordEmail,
-  sendVerificationEmail,
+  //sendVerificationEmail,
 };

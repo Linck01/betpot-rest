@@ -9,57 +9,37 @@ const { gameService } = require('./');
  * @returns {Promise<Member>}
  */
 const createMember = async (memberBody) => {
-  return Member.create(memberBody);
+  const member = await Member.create(memberBody);
+  return member;
 };
 
-/**
- * Query for members
- * @param {Object} filter - Mongo filter
- * @param {Object} options - Query options
- * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
- * @param {number} [options.limit] - Maximum number of results per page (default = 10)
- * @param {number} [options.page] - Current page (default = 1)
- * @returns {Promise<QueryResult>}
- */
 const queryMembers = async (filter, options) => {
   const members = await Member.paginate(filter, options);
   return members;
 };
 
 const getMemberByGameUserId = async (gameId, userId) => {
-  const member = Member.findOne({userId, gameId});
+  const member = await Member.findOne({userId, gameId});
 
   return member;
 };
 
-/**
- * Update member by gameId + userId
- * @param {ObjectId} memberId
- * @param {Object} updateBody
- * @returns {Promise<Member>}
- */
  const updateMemberByGameUserId = async (gameId, userId, updateBody) => {
   const member = await getMemberByGameUserId(gameId, userId);
-  if (!member) {
+  if (!member) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
-  }
+  
   
   Object.assign(member, updateBody);
   await member.save();
   return member;
 };
 
-/**
- * Update member by id
- * @param {ObjectId} memberId
- * @param {Object} updateBody
- * @returns {Promise<Member>}
- */
 const updateMemberById = async (memberId, updateBody) => {
   const member = await getMemberById(memberId);
-  if (!member) {
+  if (!member) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
-  }
+  
   
   Object.assign(member, updateBody);
   await member.save();
@@ -69,27 +49,29 @@ const updateMemberById = async (memberId, updateBody) => {
 const increment = async (gameId, userId, field, value) => {
   const obj = {}; obj[field] = value;
 
-  const member = Member.findOneAndUpdate({gameId, userId}, {$inc: obj}, {useFindAndModify: false});
+  const member = await Member.findOneAndUpdate({gameId, userId}, {$inc: obj}, {useFindAndModify: false});
   return member;
 };
 
 const findOne = async (filter) => {
-  const member = Member.findOne(filter);
+  const member = await Member.findOne(filter);
   return member;
 };
 
-/**
- * Delete member by id
- * @param {ObjectId} memberId
- * @returns {Promise<Member>}
- */
 const deleteMemberById = async (memberId) => {
   const member = await getMemberById(memberId);
-  if (!member) {
+  if (!member) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
-  }
+  
+
   await member.remove();
   return member;
+};
+
+const deleteMembersByGameId = async (gameId) => {
+  await Member.deleteMany({gameId});
+  
+  return;
 };
 
 module.exports = {
@@ -100,5 +82,6 @@ module.exports = {
   deleteMemberById,
   updateMemberByGameUserId,
   findOne,
-  increment
+  increment,
+  deleteMembersByGameId
 };

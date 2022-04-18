@@ -11,10 +11,12 @@ var util = require('util');
  * @returns {Promise<User>}
  */
 const createUser = async (userBody) => {
-  if (await User.isEmailTaken(userBody.email)) {
+  if (await User.isEmailTaken(userBody.email)) 
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
-  return User.create(userBody);
+  
+
+  const user = await User.create(userBody);
+  return user;
 };
 
 /**
@@ -37,7 +39,8 @@ const queryUsers = async (filter, options) => {
  * @returns {Promise<User>}
  */
 const getUserById = async (id, projection) => {
-  return User.findById(id, projection);
+  const user = await User.findById(id, projection);
+  return user;
 };
 
 const addUsersToArray = async (arr) => {
@@ -57,7 +60,8 @@ const addUsersToArray = async (arr) => {
  * @returns {Promise<User>}
  */
 const getUserByEmail = async (email) => {
-  return User.findOne({ email });
+  const user = await User.findOne({ email });
+  return user;
 };
 
 /**
@@ -68,12 +72,12 @@ const getUserByEmail = async (email) => {
  */
 const updateUserById = async (userId, updateBody) => {
   const user = await getUserById(userId, {});
-  if (!user) {
+  if (!user) 
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
-  }
-  if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) {
+  
+  if (updateBody.email && (await User.isEmailTaken(updateBody.email, userId))) 
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
-  }
+  
   Object.assign(user, updateBody);
   await user.save();
   return user;
@@ -86,9 +90,9 @@ const updateUserById = async (userId, updateBody) => {
  */
 const deleteUserById = async (userId) => {
   const user = await getUserById(userId, {});
-  if (!user) {
+  if (!user) 
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
-  }
+  
   await user.remove();
   return user;
 };
@@ -96,7 +100,7 @@ const deleteUserById = async (userId) => {
 const increment = async (id, field, value) => {
   const obj = {}; obj[field] = value;
 
-  const user = User.findOneAndUpdate({_id: id}, {$inc: obj}, {useFindAndModify: false});
+  const user = await User.findOneAndUpdate({_id: id}, {$inc: obj}, {useFindAndModify: false});
   return user;
 };
 

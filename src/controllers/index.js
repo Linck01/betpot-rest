@@ -5,3 +5,4 @@ module.exports.memberController = require('./member.controller');
 module.exports.messageController = require('./message.controller');
 module.exports.betController = require('./bet.controller');
 module.exports.tipController = require('./tip.controller');
+module.exports.loggingController = require('./logging.controller');

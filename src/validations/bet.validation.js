@@ -22,17 +22,25 @@ const createBet = {
   }),
 };
 
-const finalizeBet = {
+const solveBet = {
+  params: Joi.object().keys({
+    betId: Joi.custom(objectId),
+  }),
   body: Joi.object().keys({
-    betId: Joi.string().required().min(1).max(128),
     answerIds: Joi.array().optional().items(Joi.number()).min(1).max(32),
     answerDecimal: Joi.number().optional()
   })
 };
 
 const abortBet = {
-  body: Joi.object().keys({
-    betId: Joi.string().required().min(1).max(128),
+  params: Joi.object().keys({
+    betId: Joi.custom(objectId),
+  }),
+};
+
+const endBet = {
+  params: Joi.object().keys({
+    betId: Joi.custom(objectId),
   }),
 };
 
@@ -67,7 +75,7 @@ const updateBet = {
 
 const deleteBet = {
   params: Joi.object().keys({
-    userId: Joi.string().custom(objectId),
+    betId: Joi.custom(objectId),
   }),
 };
 
@@ -78,6 +86,7 @@ module.exports = {
   getBet,
   updateBet,
   deleteBet,
-  finalizeBet,
-  abortBet
+  endBet,
+  solveBet,
+  abortBet,
 };

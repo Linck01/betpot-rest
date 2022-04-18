@@ -7,14 +7,15 @@ module.exports.init = async () => {
 }
 
 const payout = async () => {
-    const bets =  await betService.getFinishedUnpaidBets();
-    payoutService.addToQueue(bets);
+    const bets =  await betService.getSolvedAbortedUnpaidBets();
+    for (let bet of bets)
+        payoutService.addToQueue(bet.id);
 
     while (true) {
         try { await payoutService.processNextBet(); }
         catch (e) { console.log(e); }
 
-        await fct.sleep(1000);
+        await fct.sleep(2000);
     }
 }
 

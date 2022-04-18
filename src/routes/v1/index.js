@@ -7,6 +7,7 @@ const betRoute = require('./bet.route');
 const tipRoute = require('./tip.route');
 const messageRoute = require('./message.route');
 const memberRoute = require('./member.route');
+const loggingRoute = require('./logging.route');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -39,6 +40,10 @@ const defaultRoutes = [
   {
     path: '/tips',
     route: tipRoute,
+  },
+  {
+    path: '/loggings',
+    route: loggingRoute,
   }
 ];
 

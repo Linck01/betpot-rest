@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { betService, gameService, memberService, payoutService } = require('../services');
+const { betService, gameService, memberService, payoutService, loggingService, tipService } = require('../services');
 const socket = require('../utils/socket');
 
 
@@ -27,7 +27,7 @@ const createBet = catchAsync(async (req, res) => {
 
   // Add log
   const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-  await gameService.addLog(bet.gameId,'betCreated','Bet created','Bet ' + betTitle + ' was created.');
+  await loggingService.createLogging({gameId: bet.gameId, logType: 'betCreated', title: 'Bet created', desc: 'Bet ' + betTitle + ' was created.'});
 
   // Inc betCount
   await gameService.increment(game.id, 'betCount', 1);
@@ -38,11 +38,11 @@ const createBet = catchAsync(async (req, res) => {
   res.status(httpStatus.CREATED).send(bet);
 });
 
-const finalizeBet = catchAsync(async (req, res) => {
+const solveBet = catchAsync(async (req, res) => {
   if (!req.user) 
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
   
-  const bet = await betService.getBetById(req.body.betId);
+  let bet = await betService.getBetById(req.params.betId);
   if (!bet) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
 
@@ -53,27 +53,30 @@ const finalizeBet = catchAsync(async (req, res) => {
   if (game.userId != req.user.id)
     throw new ApiError(httpStatus.FORBIDDEN, 'Not authorized to finalize a bet for this game.');
 
+  if (bet.isSolved || bet.isAborted)
+    throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved or aborted.');
+
   let result;
   if (req.body.answerDecimal)
     result = req.body.answerDecimal;
   else if (req.body.answerIds)
     result = req.body.answerIds;
 
-  if (bet.isSolved)
-    throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved.');
-
   if (bet.betType == 'catalogue')
-    await betService.updateBetById(bet.id,{...bet, isSolved: true, correctAnswerIds: result})
+    await betService.updateBetById(bet.id, {isSolved: true, correctAnswerIds: result});
   if (bet.betType == 'scale')
-    await betService.updateBetById(bet.id,{...bet, isSolved: true, correctAnswerDecimal: result})
+    await betService.updateBetById(bet.id, {isSolved: true, correctAnswerDecimal: result});
   
-  payoutService.addToQueue([bet]);
+  payoutService.addToQueue(bet.id);
 
   // Update Membercount
   const page = await memberService.queryMembers({gameId: game.id}, {limit:1});
-  console.log('FINALIZEBET Update Membercount page',page); 
-  await gameService.updateGameById(game.id, { memberCount: page.totalResults });
+  //console.log('FINALIZEBET Update Membercount page',page); 
+  await gameService.updateGameById(game.id, {memberCount: page.totalResults});
   
+  bet = await betService.getBetById(req.params.betId);
+  await socket.sendUpdateBetToGame(bet);
+
   res.status(httpStatus.NO_CONTENT).send();
 });
 
@@ -81,21 +84,53 @@ const abortBet = catchAsync(async (req, res) => {
   if (!req.user) 
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
   
+  let bet = await betService.getBetById(req.params.betId);
+  if (!bet) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
+
   const game = await gameService.getGameById(bet.gameId);
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
   if (game.userId != req.user.id)
-    throw new ApiError(httpStatus.FORBIDDEN, 'Not allowed to finalize a bet for this game.');
+    throw new ApiError(httpStatus.FORBIDDEN, 'Not allowed to abort a bet for this game.');
 
-  const bet = await getBetById(betId);
+  if (bet.isSolved || bet.isAborted)
+    throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved or aborted.');
+
+  await betService.updateBetById(bet.id, {isAborted: true});
+
+  payoutService.addToQueue(bet); 
+
+  bet = await betService.getBetById(req.params.betId);
+  await socket.sendUpdateBetToGame(bet);
+
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+
+const endBet = catchAsync(async (req, res) => {
+  if (!req.user) 
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
+  
+  let bet = await betService.getBetById(req.params.betId);
   if (!bet) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
 
-  await betService.updateBetById(bet.id,{...bet, isAborted: true});
+  const game = await gameService.getGameById(bet.gameId);
+  if (!game) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-  await gameService.addLog(bet.gameId,'betAborted','Bet aborted','Bet ' + betTitle + ' was aborted and redistributed.');
+  if (game.userId != req.user.id)
+    throw new ApiError(httpStatus.FORBIDDEN, 'Not allowed to end a bet for this game.');
+
+  if (bet.isSolved || bet.isAborted)
+    throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved or aborted.');
+
+  await betService.updateBetById(bet.id, {timeLimit: Date.now()});
+  
+  bet = await betService.getBetById(req.params.betId);
+  await socket.sendUpdateBetToGame(bet);
 
   res.status(httpStatus.NO_CONTENT).send();
 });
@@ -110,11 +145,22 @@ const getBets = catchAsync(async (req, res) => {
 
 const getBet = catchAsync(async (req, res) => {
   const bet = await betService.getBetById(req.params.betId);
-  if (!bet) {
+  if (!bet) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found');
-  }
   
   res.send(bet);
+});
+
+const getSettlement = catchAsync(async (req, res) => {
+  const bet = await betService.getBetById(req.params.betId);
+  if (!bet)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found');
+  
+  if (!bet.isSolved && !bet.isAborted)
+    throw new ApiError(httpStatus.FORBIDDEN, 'Bet has not yet been solved or aborted.');
+  
+  const settlement = await payoutService.getSettlement(bet);
+  res.send(settlement);
 });
 
 /*
@@ -123,11 +169,27 @@ const updateBet = catchAsync(async (req, res) => {
   res.send(bet);
 });
 
+*/
 const deleteBet = catchAsync(async (req, res) => {
+  if (!req.user) 
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
+
+  const bet = await betService.getBetById(req.params.betId);
+  if (!bet) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
+
+  const game = await gameService.getGameById(bet.gameId);
+  if (!game) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
+
+  if (game.userId != req.user.id)
+    throw new ApiError(httpStatus.FORBIDDEN, 'Not authorized to delete this bet.');
+
+  await tipService.deleteTipsByBetId(req.params.betId);
   await betService.deleteBetById(req.params.betId);
   res.status(httpStatus.NO_CONTENT).send();
 });
-*/
+
 
 const populateScale_answers = (betBody) => {
   const { min, max, step } = betBody.scale_options;
@@ -154,8 +216,10 @@ module.exports = {
   createBet,
   getBets,
   getBet,
-  finalizeBet,
-  abortBet
+  endBet,
+  solveBet,
+  abortBet,
+  getSettlement,
   //updateBet,
-  //deleteBet,
+  deleteBet,
 };

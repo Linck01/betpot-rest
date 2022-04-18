@@ -8,3 +8,4 @@ module.exports.messageService = require('./message.service');
 module.exports.betService = require('./bet.service');
 module.exports.tipService = require('./tip.service');
 module.exports.payoutService = require('./payout.service');
+module.exports.loggingService = require('./logging.service');

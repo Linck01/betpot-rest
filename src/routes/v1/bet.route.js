@@ -14,13 +14,21 @@ router
 
 router
   .route('/:betId')
-  .get(validate(betValidation.getBet), betController.getBet);
+  .get(validate(betValidation.getBet), betController.getBet)
   //.patch(validate(betValidation.updateBet), betController.updateBet)
-  //.delete(validate(betValidation.deleteBet), betController.deleteBet);
+  .delete(validate(betValidation.deleteBet), betController.deleteBet);
 
 router
-  .route('/:betId/finalize')
-  .patch(validate(betValidation.finalizeBet), betController.finalizeBet);
+  .route('/:betId/settlement')
+  .get(validate(betValidation.getBet), betController.getSettlement);
+
+router
+  .route('/:betId/solve')
+  .patch(validate(betValidation.solveBet), betController.solveBet);
+
+router
+  .route('/:betId/end')
+  .patch(validate(betValidation.endBet), betController.endBet);
 
 router
   .route('/:betId/abort')

@@ -18,6 +18,6 @@ router
   .route('/:gameId')
   .get(validate(gameValidation.getGame), gameController.getGame)
   .patch(validate(gameValidation.updateGame), gameController.updateGame)
-  //.delete(auth('manageGames'), validate(gameValidation.deleteGame), gameController.deleteGame);
+  .delete(validate(gameValidation.deleteGame), gameController.deleteGame);
 
 module.exports = router;

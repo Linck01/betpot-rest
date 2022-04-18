@@ -40,7 +40,7 @@ const updateGame = {
 
 const deleteGame = {
   params: Joi.object().keys({
-    userId: Joi.string().custom(objectId),
+    gameId: Joi.custom(objectId),
   }),
 };
 
