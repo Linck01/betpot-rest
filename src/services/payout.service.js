@@ -159,9 +159,9 @@ const getAndSortTips = async (bet) => {
 
     const winners = {sum: 0, stacks: []};
     const losers = {sum: 0,stacks:[]};
-    let isWinner, lastStack, lastStackIsWinner, accumulatedPot = 0;
+    let isWinner, lastStack, lastStackIsWinner = false, accumulatedPot = 0, first = true;
 
-    const inPot = stacks.reduce((prev,curr) => prev.sum + curr.sum, 0);
+    const inPot = stacks.reduce((prev,curr) => prev + curr.sum, 0);
 
     for (let stack of stacks) {
         if (bet.isAborted) {
@@ -169,14 +169,15 @@ const getAndSortTips = async (bet) => {
         } else if (bet.betType == 'catalogue') {
             isWinner = bet.correctAnswerIds.includes(stack.answer);
         } else if (bet.betType == 'scale') {
+            
             accumulatedPot += stack.sum;
-            isWinner = accumulatedPot < Math.floor(inPot * (bet.scale_options.winRate / 100));
+            isWinner = first || accumulatedPot < Math.floor(inPot * (bet.scale_options.winRate / 100));
+            console.log(isWinner);
 
-            if (!isWinner && lastStackIsWinner && stack.proximity == lastStack.proximity) {
+            if (!isWinner && lastStackIsWinner && stack.proximity == lastStack.proximity)
                 isWinner = true;
-                //console.log(stack.answer,lastStack.answer,stack.proximity, lastStack.proximity);
-            }
 
+            first = false;
             lastStackIsWinner = isWinner;
             lastStack = stack;
         } else 

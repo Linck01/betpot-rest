@@ -39,7 +39,7 @@ const gameSchema = mongoose.Schema(
       trim: true,
       default: ''
     },
-    isSolved: {
+    isEnded: {
       type: Boolean,
       default: false
     },
