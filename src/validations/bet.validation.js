@@ -12,11 +12,11 @@ const createBet = {
       odds: Joi.number().required().min(0).max(32),
     }).min(2).max(32)),
     scale_options: Joi.object().keys({
-      step: Joi.number(),
-      min: Joi.number(),
-      max: Joi.number(),
+      step: Joi.number().min(0.000001).max(1000000000000),
+      min: Joi.number().min(0).max(1000000000000),
+      max: Joi.number().min(0).max(1000000000000),
       odds: Joi.number().required().min(1).max(32),
-      winRate: Joi.number().required().min(1).max(75),
+      winRate: Joi.number().required().min(1).max(95),
     }),
     timeLimit: Joi.date().required()
   }),

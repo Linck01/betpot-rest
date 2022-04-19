@@ -20,9 +20,17 @@ const createBet = catchAsync(async (req, res) => {
   if (game.userId != betBody.userId)
     throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized to create a bet for this game.');
 
-  if (betBody.betType == 'scale')
-    populateScale_answers(betBody);
+  if (betBody.betType == 'scale') {
+    if (betBody.scale_options.min >= betBody.scale_options.max)
+      throw new ApiError(httpStatus.NOT_FOUND, 'Min value must be smaller than max value.');
 
+    populateScale_answers(betBody);
+  }
+
+  if (betBody.betType == 'catalogue') {
+    
+  }
+    
   const bet = await betService.createBet(betBody);
 
   // Add log
