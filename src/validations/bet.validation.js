@@ -5,7 +5,7 @@ const createBet = {
   body: Joi.object().keys({
     title: Joi.string().required().min(1).max(128),
     gameId: Joi.required().custom(objectId),
-    desc: Joi.string().max(512),
+    desc: Joi.string().max(512).allow(''),
     betType: Joi.string().max(32),
     catalogue_answers: Joi.array().items(Joi.object().keys({
       title: Joi.string().required().min(1).max(64),

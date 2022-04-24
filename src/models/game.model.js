@@ -39,6 +39,11 @@ const gameSchema = mongoose.Schema(
       trim: true,
       default: ''
     },
+    language: {
+      type: String,
+      trim: true,
+      default: 'en_US'
+    },
     isEnded: {
       type: Boolean,
       default: false

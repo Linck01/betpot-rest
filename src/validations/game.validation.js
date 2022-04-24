@@ -34,7 +34,8 @@ const updateGame = {
       isEnded: Joi.boolean(),
       startCurrency: Joi.number(),
       currencyName: Joi.string().max(32),
-      bannerUrl: Joi.string().max(4096)
+      bannerUrl: Joi.string().max(4096),
+      language: Joi.string().max(16)
     })
 };
 
