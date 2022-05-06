@@ -50,7 +50,13 @@ const betSchema = mongoose.Schema(
       type: Boolean,
       default: false
     },
-    
+    dynamicOdds: {
+      type: Boolean,
+      default: false
+    },
+    dynamicOddsPower: {
+      type: mongoose.Decimal128,
+    },
     catalogue_answers: {
       type: [{
         title: {
@@ -91,10 +97,6 @@ const betSchema = mongoose.Schema(
           type: Number,
           required: true
         },
-        odds: {
-          type: Number,
-          required: true
-        },
       }
     },
     scale_answers: {
@@ -111,6 +113,10 @@ const betSchema = mongoose.Schema(
         memberCount: {
           type: Number,
           default: 0,
+          required: true
+        },
+        odds: {
+          type: mongoose.Decimal128,
           required: true
         },
       }]

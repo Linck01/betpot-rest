@@ -50,7 +50,7 @@ const createTip = catchAsync(async (req, res) => {
   
   let tip;
   if (bet.betType == 'catalogue')
-    tip = await catalogueTipCreate(tipBody);
+    tip = await catalogueTipCreate(tipBody,bet);
   if (bet.betType == 'scale')
     tip = await scaleTipCreate(tipBody,bet);
   
@@ -72,21 +72,18 @@ const createTip = catchAsync(async (req, res) => {
   res.status(httpStatus.CREATED).send(tip);
 });
 
-const catalogueTipCreate = async (tipBody) => {
+const catalogueTipCreate = async (tipBody,bet) => {
   // Add/Increment tip
   const duplicateTip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerId: tipBody.answerId });
 
-  let tip;
-  if (duplicateTip) {
-    await tipService.increment(duplicateTip.id,'currency',tipBody.currency);
-    tip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerId: tipBody.answerId });
-  } else {
-    // Increment answer memberCount (if user has not placed a tip on that specific answer)
+  // Increment answer memberCount (if user has not placed a tip on that specific answer)
+  if (!duplicateTip) 
     await betService.increment(tipBody.betId,'catalogue_answers.' + tipBody.answerId + '.memberCount', 1);
 
-    tip = await tipService.createTip(tipBody);
-  }
-  
+  let tip;
+  tipBody.odds = await adaptCatalogueOdds(bet, tipBody);
+  tip = await tipService.createTip(tipBody);
+
   // Increment answer inPot
   await betService.increment(tipBody.betId,'catalogue_answers.' + tipBody.answerId + '.inPot', tipBody.currency);
 
@@ -95,30 +92,74 @@ const catalogueTipCreate = async (tipBody) => {
 
 const scaleTipCreate = async (tipBody,bet) => {
   // Add/Increment tip
-  const duplicateTip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerDecimal: tipBody.answerDecimal});
+  //const duplicateTip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerDecimal: tipBody.answerDecimal});
   const interval = getScaleInterval(tipBody.answerDecimal, bet.scale_answers);
 
   const intervalFilter = interval.to ? { $gte: interval.from,  $lt: interval.to } : { $gte: interval.from };
   const intervalTip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerDecimal: intervalFilter});
 
   let tip;
-  if (duplicateTip) {
-    await tipService.increment(duplicateTip.id,'currency',tipBody.currency);
-    tip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerDecimal: tipBody.answerDecimal});
-  } else {
-    tip = await tipService.createTip(tipBody);
-  }
+  tipBody.odds = await adaptScaleOdds(bet,tipBody,interval);
+  tip = await tipService.createTip(tipBody);
 
   // Increment interval memberCount (if user has not placed a tip on that specific interval)
-  if (!intervalTip) {
+  if (!intervalTip) 
     await betService.increment(tipBody.betId,'scale_answers.' + interval.index + '.memberCount', 1);
-  }
 
   // Increment interval inPot
   await betService.increment(tipBody.betId, 'scale_answers.' + interval.index + '.inPot', tipBody.currency);
   
   return tip;
 };
+
+const adaptCatalogueOdds = async (bet, tipBody) => {
+  const currentOdds = parseFloat(bet.catalogue_answers[tipBody.answerId].odds);
+
+  if (!bet.dynamicOdds)
+    return currentOdds;
+
+  // Tipped answer
+  // currency: 10, currentOdds: 2.0, factor: 0.01 -> newOdds: 1 + (2 - 1) / (1 + 0.01 ) = 1.99
+  // currency: 1000, currentOdds: 2.0, factor: 1 -> newOdds: 1 + (2 - 1) / (1 + 1) = 1.5
+  // currency: 500, currentOdds: 2.0, factor: 0.5 -> newOdds: 1 + (2 - 1) / (1 + 0.5) = 1.66
+  // currency: 100, currentOdds: 2.0, factor: 0.1 -> newOdds: 1 + (2 - 1) / (1 + 0.1) = 1.91
+
+  // currency: 10, currentOdds: 3.0, factor: 0.01 -> newOdds: 1 + (3 - 1) / (1 + 0.01 ) = 2.98
+  // currency: 1000, currentOdds: 3.0, factor: 1 -> newOdds: 1 + (3 - 1) / (1 + 1) = 2
+  // currency: 500, currentOdds: 3.0, factor: 0.5 -> newOdds: 1 + (3 - 1) / (1 + 0.5) = 2.33
+  // currency: 100, currentOdds: 3.0, factor: 0.1 -> newOdds: 1 + (3 - 1) / (1 + 0.1) = 2.81
+
+  // Other answers
+  // currency: 10, currentOdds: 2.0, factor: 0.01 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.01) = 2.01
+  // currency: 1000, currentOdds: 2.0, factor: 1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 1) = 3
+  // currency: 500, currentOdds: 2.0, factor: 0.5 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.5) = 2.5
+  // currency: 100, currentOdds: 2.0, factor: 0.1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.1) = 2.1
+
+  // currency: 10, currentOdds: 3.0, factor: 0.01 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.01) = 3.02
+  // currency: 1000, currentOdds: 3.0, factor: 1 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 1) = 5
+  // currency: 500, currentOdds: 3.0, factor: 0.5 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.5) = 4
+  // currency: 100, currentOdds: 3.0, factor: 0.1 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.1) = 3.2
+
+  /*const currencyFactor = parseFloat(tipBody.currency) / parseFloat(bet.dynamicOddsPower); // 0.3
+  const currentOddsFactor = (currentOdds - 1); // 1.0
+
+
+  const divisor = currentOddsFactor ;
+
+  const newOdds = 1 +  / 2 ;
+  console.log('ADAPT');
+  console.log(bet.dynamicOdds, factor, newOdds);*/
+  return currentOdds;
+}
+
+const adaptScaleOdds = async (bet, tipBody, interval) => {
+  const currentOdds = bet.scale_answers[interval.index].odds;
+
+  if (!bet.dynamicOdds)
+    return currentOdds;
+
+  return currentOdds;
+}
 
 const getTips = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['betId', 'userId']);

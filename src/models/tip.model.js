@@ -28,6 +28,9 @@ const tipSchema = mongoose.Schema(
       type: Number,
       trim: true,
     },
+    odds: {
+      type: mongoose.Decimal128,
+    },
     currency: {
       type: mongoose.Decimal128,
       required: true,

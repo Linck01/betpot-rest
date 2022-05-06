@@ -8,7 +8,7 @@ const { verify } = require('hcaptcha');
 
 const register = catchAsync(async (req, res) => {
   const captcha = await verify(config.captchaSecret,req.body.captchaToken);
-  if (!captcha.success)
+  if (config.env != 'development' && !captcha.success)
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
 
   const user = await userService.createUser(req.body);

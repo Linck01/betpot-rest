@@ -159,7 +159,7 @@ const getBet = catchAsync(async (req, res) => {
   res.send(bet);
 });
 
-const getSettlement = catchAsync(async (req, res) => {
+const getSettlementTips = catchAsync(async (req, res) => {
   const bet = await betService.getBetById(req.params.betId);
   if (!bet)
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found');
@@ -167,8 +167,8 @@ const getSettlement = catchAsync(async (req, res) => {
   if (!bet.isSolved && !bet.isAborted)
     throw new ApiError(httpStatus.FORBIDDEN, 'Bet has not yet been solved or aborted.');
   
-  const settlement = await payoutService.getSettlement(bet);
-  res.send(settlement);
+  const settlementTips = await payoutService.getSettlementTips(bet);
+  res.send(settlementTips);
 });
 
 /*
@@ -215,8 +215,9 @@ const populateScale_answers = (betBody) => {
   betBody.scale_answers = [];
 
   for (let i = 0; i < maxFroms; i++)
-    betBody.scale_answers.push({from: min+i*intervalSize});
-  
+    betBody.scale_answers.push({from: min+i*intervalSize, odds:betBody.scale_options.odds});
+
+  console.log(betBody.scale_answers);
   return;
 };
 
@@ -227,7 +228,7 @@ module.exports = {
   endBet,
   solveBet,
   abortBet,
-  getSettlement,
+  getSettlementTips,
   //updateBet,
   deleteBet,
 };

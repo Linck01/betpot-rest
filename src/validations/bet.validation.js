@@ -5,16 +5,18 @@ const createBet = {
   body: Joi.object().keys({
     title: Joi.string().required().min(1).max(128),
     gameId: Joi.required().custom(objectId),
-    desc: Joi.string().max(512).allow(''),
-    betType: Joi.string().max(32),
+    desc: Joi.string().required().max(512).allow(''),
+    betType: Joi.string().required().max(32),
+    dynamicOdds: Joi.boolean().required(),
+    dynamicOddsPower: Joi.number().optional().min(10).max(1000000000000),
     catalogue_answers: Joi.array().items(Joi.object().keys({
       title: Joi.string().required().min(1).max(64),
       odds: Joi.number().required().min(0).max(32),
     }).min(2).max(32)),
     scale_options: Joi.object().keys({
-      step: Joi.number().min(0.000001).max(1000000000000),
-      min: Joi.number().min(0).max(1000000000000),
-      max: Joi.number().min(0).max(1000000000000),
+      step: Joi.number().required().min(0.000001).max(1000000000000),
+      min: Joi.number().required().min(0).max(1000000000000),
+      max: Joi.number().required().min(0).max(1000000000000),
       odds: Joi.number().required().min(1).max(32),
       winRate: Joi.number().required().min(1).max(95),
     }),
@@ -60,6 +62,12 @@ const getBet = {
   }),
 };
 
+const getSettlementTips = {
+  params: Joi.object().keys({
+    betId: Joi.custom(objectId),
+  }),
+};
+
 const updateBet = {
   params: Joi.object().keys({
     userId: Joi.required().custom(objectId),
@@ -89,4 +97,5 @@ module.exports = {
   endBet,
   solveBet,
   abortBet,
+  getSettlementTips
 };

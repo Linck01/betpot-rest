@@ -19,8 +19,8 @@ router
   .delete(validate(betValidation.deleteBet), betController.deleteBet);
 
 router
-  .route('/:betId/settlement')
-  .get(validate(betValidation.getBet), betController.getSettlement);
+  .route('/:betId/settlementTips')
+  .get(validate(betValidation.getSettlementTips), betController.getSettlementTips);
 
 router
   .route('/:betId/solve')
