@@ -16,4 +16,8 @@ router
   .get(validate(memberValidation.getMember), memberController.getMember)
   .patch(validate(memberValidation.updateMember), memberController.updateMember)
 
+router
+  .route('/topUpStartCurrency')
+  .patch(validate(memberValidation.topUpStartCurrency), memberController.topUpStartCurrency)
+
 module.exports = router;

@@ -24,7 +24,7 @@ const getMemberByGameUserId = async (gameId, userId) => {
   return member;
 };
 
- const updateMemberByGameUserId = async (gameId, userId, updateBody) => {
+const updateMemberByGameUserId = async (gameId, userId, updateBody) => {
   const member = await getMemberByGameUserId(gameId, userId);
   if (!member) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Member not found');
@@ -33,6 +33,11 @@ const getMemberByGameUserId = async (gameId, userId) => {
   Object.assign(member, updateBody);
   await member.save();
   return member;
+};
+
+const updateMembers = async (filter, update, options ) => {
+  await Member.updateMany(filter, update, options);
+  return ;
 };
 
 const updateMemberById = async (memberId, updateBody) => {
@@ -81,6 +86,7 @@ module.exports = {
   updateMemberById,
   deleteMemberById,
   updateMemberByGameUserId,
+  updateMembers,
   findOne,
   increment,
   deleteMembersByGameId

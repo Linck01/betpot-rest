@@ -38,6 +38,9 @@ const createTip = catchAsync(async (req, res) => {
   if(!member)
     member = await memberService.createMember({ gameId: tipBody.gameId, userId: tipBody.userId, currency: game.startCurrency })
 
+  if (member.isBanned)
+    throw new ApiError(httpStatus.NOT_FOUND, 'You are banned from this game.');
+
   if (member.currency < tipBody.currency) 
     throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Not enough points to spend.');
 
@@ -81,7 +84,7 @@ const catalogueTipCreate = async (tipBody,bet) => {
     await betService.increment(tipBody.betId,'catalogue_answers.' + tipBody.answerId + '.memberCount', 1);
 
   let tip;
-  tipBody.odds = await adaptCatalogueOdds(bet, tipBody);
+  tipBody.odds = fct.getActualOdds(bet)[tipBody.answerId];
   tip = await tipService.createTip(tipBody);
 
   // Increment answer inPot
@@ -99,7 +102,7 @@ const scaleTipCreate = async (tipBody,bet) => {
   const intervalTip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerDecimal: intervalFilter});
 
   let tip;
-  tipBody.odds = await adaptScaleOdds(bet,tipBody,interval);
+  tipBody.odds = fct.getActualOdds(bet)[interval.index];
   tip = await tipService.createTip(tipBody);
 
   // Increment interval memberCount (if user has not placed a tip on that specific interval)
@@ -112,51 +115,54 @@ const scaleTipCreate = async (tipBody,bet) => {
   return tip;
 };
 
+
+
+/*
 const adaptCatalogueOdds = async (bet, tipBody) => {
   const currentOdds = parseFloat(bet.catalogue_answers[tipBody.answerId].odds);
 
   if (!bet.dynamicOdds)
     return currentOdds;
 
-  // Tipped answer
-  // currency: 10, currentOdds: 2.0, factor: 0.01 -> newOdds: 1 + (2 - 1) / (1 + 0.01 ) = 1.99
-  // currency: 1000, currentOdds: 2.0, factor: 1 -> newOdds: 1 + (2 - 1) / (1 + 1) = 1.5
-  // currency: 500, currentOdds: 2.0, factor: 0.5 -> newOdds: 1 + (2 - 1) / (1 + 0.5) = 1.66
-  // currency: 100, currentOdds: 2.0, factor: 0.1 -> newOdds: 1 + (2 - 1) / (1 + 0.1) = 1.91
+  const currencyFactor = parseFloat(tipBody.currency) / parseFloat(bet.dynamicOddsPower)
+  
+  let newCatalogueAnswers = [], answer;
+  for (let i = 0; i < bet.catalogue_answers.length; i++) {
+    answer = bet.catalogue_answers[i];
 
-  // currency: 10, currentOdds: 3.0, factor: 0.01 -> newOdds: 1 + (3 - 1) / (1 + 0.01 ) = 2.98
-  // currency: 1000, currentOdds: 3.0, factor: 1 -> newOdds: 1 + (3 - 1) / (1 + 1) = 2
-  // currency: 500, currentOdds: 3.0, factor: 0.5 -> newOdds: 1 + (3 - 1) / (1 + 0.5) = 2.33
-  // currency: 100, currentOdds: 3.0, factor: 0.1 -> newOdds: 1 + (3 - 1) / (1 + 0.1) = 2.81
+    if (i == tipBody.answerId)
+      newCatalogueAnswers.push({...answer.toObject(), odds: 1 + (currentOdds - 1) / (1 + currencyFactor)});
+    else
+      newCatalogueAnswers.push({...answer.toObject(), odds: 1 + (parseFloat(answer.odds) - 1) * (1 + (currencyFactor / (bet.catalogue_answers.length - 1)))});
+  }
 
-  // Other answers
-  // currency: 10, currentOdds: 2.0, factor: 0.01 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.01) = 2.01
-  // currency: 1000, currentOdds: 2.0, factor: 1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 1) = 3
-  // currency: 500, currentOdds: 2.0, factor: 0.5 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.5) = 2.5
-  // currency: 100, currentOdds: 2.0, factor: 0.1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.1) = 2.1
+  //console.log(newCatalogueAnswers[tipBody.answerId], newCatalogueAnswers);
+  await betService.updateBetById(bet.id, {catalogue_answers: newCatalogueAnswers});
 
-  // currency: 10, currentOdds: 3.0, factor: 0.01 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.01) = 3.02
-  // currency: 1000, currentOdds: 3.0, factor: 1 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 1) = 5
-  // currency: 500, currentOdds: 3.0, factor: 0.5 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.5) = 4
-  // currency: 100, currentOdds: 3.0, factor: 0.1 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.1) = 3.2
-
-  /*const currencyFactor = parseFloat(tipBody.currency) / parseFloat(bet.dynamicOddsPower); // 0.3
-  const currentOddsFactor = (currentOdds - 1); // 1.0
-
-
-  const divisor = currentOddsFactor ;
-
-  const newOdds = 1 +  / 2 ;
-  console.log('ADAPT');
-  console.log(bet.dynamicOdds, factor, newOdds);*/
   return currentOdds;
 }
+*/
 
 const adaptScaleOdds = async (bet, tipBody, interval) => {
   const currentOdds = bet.scale_answers[interval.index].odds;
 
   if (!bet.dynamicOdds)
     return currentOdds;
+
+  const currencyFactor = parseFloat(tipBody.currency) / parseFloat(bet.dynamicOddsPower)
+
+  let newScaleAnswers = [], answerInterval;
+  for (let i = 0; i < bet.scale_answers.length; i++) {
+    answerInterval = bet.scale_answers[i];
+
+    if (i == interval.index)
+      newScaleAnswers.push({...answerInterval.toObject(), odds: 1 + (currentOdds - 1) / (1 + currencyFactor)});
+    else
+      newScaleAnswers.push({...answerInterval.toObject(), odds: 1 + (parseFloat(answerInterval.odds) - 1) * (1 + (currencyFactor / (bet.scale_answers.length - 1)))});
+  }
+
+  console.log(newScaleAnswers[interval.index], newScaleAnswers);
+  await betService.updateBetById(bet.id, {scale_answers: newScaleAnswers});
 
   return currentOdds;
 }
@@ -188,6 +194,39 @@ const getScaleInterval = (value,scale_answers) => {
   return { index, from, to };
 };
 
+/*
+
+
+
+// Tipped answer
+  // currency: 10, currentOdds: 2.0, factor: 0.01 -> newOdds: 1 + (2 - 1) / (1 + 0.01 ) = 1.99
+  // currency: 1000, currentOdds: 2.0, factor: 1 -> newOdds: 1 + (2 - 1) / (1 + 1) = 1.5
+  // currency: 500, currentOdds: 2.0, factor: 0.5 -> newOdds: 1 + (2 - 1) / (1 + 0.5) = 1.66
+  // currency: 100, currentOdds: 2.0, factor: 0.1 -> newOdds: 1 + (2 - 1) / (1 + 0.1) = 1.91
+
+  // currency: 10, currentOdds: 3.0, factor: 0.01 -> newOdds: 1 + (3 - 1) / (1 + 0.01 ) = 2.98
+  // currency: 1000, currentOdds: 3.0, factor: 1 -> newOdds: 1 + (3 - 1) / (1 + 1) = 2
+  // currency: 500, currentOdds: 3.0, factor: 0.5 -> newOdds: 1 + (3 - 1) / (1 + 0.5) = 2.33
+  // currency: 100, currentOdds: 3.0, factor: 0.1 -> newOdds: 1 + (3 - 1) / (1 + 0.1) = 2.81
+
+  // Other answers
+  // currency: 10, currentOdds: 2.0, factor: 0.01 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.01) = 2.01
+  // currency: 1000, currentOdds: 2.0, factor: 1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 1) = 3
+  // currency: 500, currentOdds: 2.0, factor: 0.5 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.5) = 2.5
+  // currency: 100, currentOdds: 2.0, factor: 0.1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 0.1) = 2.1
+
+  // currency: 10, currentOdds: 3.0, factor: 0.01 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.01) = 3.02
+  // currency: 1000, currentOdds: 3.0, factor: 1 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 1) = 5
+  // currency: 500, currentOdds: 3.0, factor: 0.5 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.5) = 4
+  // currency: 100, currentOdds: 3.0, factor: 0.1 -> otherAnswerOdds: 1 + (3 - 1) * (1 + 0.1) = 3.2
+
+  const currencyFactor = parseFloat(tipBody.currency) / parseFloat(bet.dynamicOddsPower); // 0.3
+
+  // answerCount: 2, currentOdds: 2.0, factor: 1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + 1) = 3
+  // answerCount: 3, currentOdds: 2.0, factor: 1 -> otherAnswerOdds: 1 + (2 - 1) * (1 + (1 / 2)) = 2.5
+
+  
+*/
 
 /*
 const getTip = catchAsync(async (req, res) => {

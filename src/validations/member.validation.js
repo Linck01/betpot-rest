@@ -20,6 +20,12 @@ const getMember = {
   }),
 };
 
+const topUpStartCurrency = {
+  body: Joi.object().keys({
+    gameId: Joi.string().custom(objectId),
+  }).min(1),
+};
+
 const updateMember = {
   params: Joi.object().keys({
     gameId: Joi.required().custom(objectId),
@@ -27,11 +33,14 @@ const updateMember = {
   }),
   body: Joi.object().keys({
     isFavoritedGame: Joi.boolean(),
+    isBanned: Joi.boolean(),
+    isModerator: Joi.boolean(),
   }).min(1),
 };
 
 module.exports = {
   getMembers,
   getMember,
-  updateMember
+  updateMember,
+  topUpStartCurrency
 };

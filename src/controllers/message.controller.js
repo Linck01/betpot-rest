@@ -3,7 +3,7 @@ const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { messageService } = require('../services');
-const { userService, gameService } = require('../services');
+const { userService, gameService, memberService } = require('../services');
 const socket = require('../utils/socket');
 
 const createMessage = catchAsync(async (req, res) => {
@@ -16,7 +16,11 @@ const createMessage = catchAsync(async (req, res) => {
 
   const user = await userService.getUserById(req.user.id, { username: true });
   if (!user) 
-  throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
+
+  const member = await memberService.getMemberByGameUserId(game.id,user.id);
+  if (member.isBanned) 
+    throw new ApiError(httpStatus.NOT_FOUND, 'You are banned from this game.');
 
   const messageBody = req.body;
   messageBody.userId = user.id;

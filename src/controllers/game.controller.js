@@ -48,7 +48,12 @@ const updateGame = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
 
   let game = await gameService.getGameById(req.params.gameId);
-  if (game.userId != req.user.id)
+  if (!game)
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
+
+  const member = await memberService.getMemberByGameUserId(game.id,req.user.id);
+  const isAdminOrMod = game.userId == req.user.id || (member && member.isModerator);
+  if (!isAdminOrMod)
     throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to change settings of this game.');
 
   game = await gameService.updateGameById(req.params.gameId, req.body);

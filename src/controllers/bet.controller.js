@@ -17,8 +17,10 @@ const createBet = catchAsync(async (req, res) => {
   if (!game)
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  if (game.userId != betBody.userId)
-    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized to create a bet for this game.');
+  const member = await memberService.getMemberByGameUserId(game.id,req.user.id);  
+  const isAdminOrMod = game.userId == req.user.id || (member && member.isModerator);
+  if (!isAdminOrMod)
+    throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to create bets for this game.');
 
   if (betBody.betType == 'scale') {
     if (betBody.scale_options.min >= betBody.scale_options.max)
@@ -26,11 +28,10 @@ const createBet = catchAsync(async (req, res) => {
 
     populateScale_answers(betBody);
   }
-
   if (betBody.betType == 'catalogue') {
     
   }
-    
+  
   const bet = await betService.createBet(betBody);
 
   // Add log
@@ -58,11 +59,13 @@ const solveBet = catchAsync(async (req, res) => {
   if (!game)
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  if (game.userId != req.user.id)
-    throw new ApiError(httpStatus.FORBIDDEN, 'Not authorized to finalize a bet for this game.');
-
   if (bet.isSolved || bet.isAborted)
     throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved or aborted.');
+
+  const member = await memberService.getMemberByGameUserId(game.id,req.user.id);  
+  const isAdminOrMod = game.userId == req.user.id || (member && member.isModerator);
+  if (!isAdminOrMod)
+    throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to solve bets of this game.');
 
   let result;
   if (req.body.answerDecimal)
@@ -100,11 +103,13 @@ const abortBet = catchAsync(async (req, res) => {
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  if (game.userId != req.user.id)
-    throw new ApiError(httpStatus.FORBIDDEN, 'Not allowed to abort a bet for this game.');
-
   if (bet.isSolved || bet.isAborted)
     throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved or aborted.');
+
+  const member = await memberService.getMemberByGameUserId(game.id,req.user.id);  
+  const isAdminOrMod = game.userId == req.user.id || (member && member.isModerator);
+  if (!isAdminOrMod)
+    throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to abort bets of this game.');
 
   await betService.updateBetById(bet.id, {isAborted: true});
 
@@ -129,11 +134,13 @@ const endBet = catchAsync(async (req, res) => {
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  if (game.userId != req.user.id)
-    throw new ApiError(httpStatus.FORBIDDEN, 'Not allowed to end a bet for this game.');
-
   if (bet.isSolved || bet.isAborted)
     throw new ApiError(httpStatus.FORBIDDEN, 'Bet has already been solved or aborted.');
+
+  const member = await memberService.getMemberByGameUserId(game.id,req.user.id);  
+  const isAdminOrMod = game.userId == req.user.id || (member && member.isModerator);
+  if (!isAdminOrMod)
+    throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to end bets of this game.');
 
   await betService.updateBetById(bet.id, {timeLimit: Date.now()});
   
@@ -190,8 +197,10 @@ const deleteBet = catchAsync(async (req, res) => {
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  if (game.userId != req.user.id)
-    throw new ApiError(httpStatus.FORBIDDEN, 'Not authorized to delete this bet.');
+  const member = await memberService.getMemberByGameUserId(game.id,req.user.id);  
+  const isAdminOrMod = game.userId == req.user.id || (member && member.isModerator);
+  if (!isAdminOrMod)
+    throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to solve bets of this game.');
 
   await tipService.deleteTipsByBetId(req.params.betId);
   await betService.deleteBetById(req.params.betId);
