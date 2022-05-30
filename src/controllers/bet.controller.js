@@ -5,7 +5,6 @@ const catchAsync = require('../utils/catchAsync');
 const { betService, gameService, memberService, payoutService, loggingService, tipService } = require('../services');
 const socket = require('../utils/socket');
 
-
 const createBet = catchAsync(async (req, res) => {
   if (!req.user) 
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
@@ -36,7 +35,7 @@ const createBet = catchAsync(async (req, res) => {
 
   // Add log
   const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-  await loggingService.createLogging({gameId: bet.gameId, logType: 'betCreated', title: 'Bet created', desc: 'Bet ' + betTitle + ' was created.'});
+  await loggingService.createLogging({gameId: game.id, logType: 'betCreated', title: 'Bet created', desc: 'Bet ' + betTitle + ' was created.'});
 
   // Inc betCount
   await gameService.increment(game.id, 'betCount', 1);
@@ -85,6 +84,9 @@ const solveBet = catchAsync(async (req, res) => {
   //console.log('FINALIZEBET Update Membercount page',page); 
   await gameService.updateGameById(game.id, {memberCount: page.totalResults});
   
+  const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
+  await loggingService.createLogging({gameId: game.id, logType: 'betSolved', title: 'Bet solved', desc: 'Bet "' + betTitle + '" was solved.'});
+
   bet = await betService.getBetById(req.params.betId);
   await socket.sendUpdateBetToGame(bet);
 
@@ -113,11 +115,14 @@ const abortBet = catchAsync(async (req, res) => {
 
   await betService.updateBetById(bet.id, {isAborted: true});
 
-  payoutService.addToQueue(bet); 
+  payoutService.addToQueue(bet.id); 
+
+  const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
+  await loggingService.createLogging({gameId: game.id, logType: 'betAborted', title: 'Bet aborted', desc: 'Bet "' + betTitle + '" was aborted.'});
 
   bet = await betService.getBetById(req.params.betId);
   await socket.sendUpdateBetToGame(bet);
-
+  
   res.status(httpStatus.NO_CONTENT).send();
 });
 

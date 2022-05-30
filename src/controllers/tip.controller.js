@@ -28,15 +28,15 @@ const createTip = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Bet not found.');
   
   const game = await gameService.getGameById(tipBody.gameId);
-  if (!game) 
+  if (!game)
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
   
   if (fct.getTimeDifferenceToNow(bet.timeLimit) > 0 || bet.isSolved || bet.isAborted)
     throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Cannot add tip - Bet has ended, is solved or was aborted.');
 
-  let member = await memberService.findOne({userId: tipBody.userId, gameId: tipBody.gameId});
+  let member = await memberService.getMemberByGameUserId(game.id, req.user.id);
   if(!member)
-    member = await memberService.createMember({ gameId: tipBody.gameId, userId: tipBody.userId, currency: game.startCurrency })
+    member = await memberService.createMember({ gameId: game.id, userId: req.user.id, currency: game.startCurrency })
 
   if (member.isBanned)
     throw new ApiError(httpStatus.NOT_FOUND, 'You are banned from this game.');

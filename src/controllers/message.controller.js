@@ -14,20 +14,19 @@ const createMessage = catchAsync(async (req, res) => {
   if (!game) 
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
-  const user = await userService.getUserById(req.user.id, { username: true });
-  if (!user) 
-    throw new ApiError(httpStatus.NOT_FOUND, 'User not found.');
+  let member = await memberService.getMemberByGameUserId(game.id,req.user.id);
+  if(!member)
+    member = await memberService.createMember({ gameId: game.id, userId: req.user.id, currency: game.startCurrency })
 
-  const member = await memberService.getMemberByGameUserId(game.id,user.id);
   if (member.isBanned) 
     throw new ApiError(httpStatus.NOT_FOUND, 'You are banned from this game.');
 
   const messageBody = req.body;
-  messageBody.userId = user.id;
+  messageBody.userId = req.user.id;
   let message = await messageService.createMessage(messageBody);
 
   message = message.toObject();
-  message.user = user;
+  message.user = req.user;
   await socket.sendChatMessageToGame(message);
 
   res.status(httpStatus.CREATED).send(message);

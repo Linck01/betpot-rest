@@ -3,7 +3,6 @@ const { gameService, tipService, betService } = require('./');
 const util = require('util');
 const mongoose = require('mongoose');
 const socket = require('../utils/socket.js');
-const loggingService = require('./logging.service.js');
 
 let betQueue = [];
 
@@ -48,7 +47,7 @@ const getSettlementTips = async (bet) => {
 const payoutSettlement = async (bet,settlementTips) => {
     const session = await mongoose.startSession();
 
-    console.log();console.log('settlement',util.inspect(settlementTips,{showHidden: false, depth: 3, colors: true}));
+    console.log('settlement',util.inspect(settlementTips,{showHidden: false, depth: 3, colors: true}));
     try {
         session.startTransaction();
         
@@ -64,9 +63,6 @@ const payoutSettlement = async (bet,settlementTips) => {
         await Tip.bulkWrite(bulkWriteTipRequest);
         await Member.bulkWrite(bulkWriteMemberRequest);
         await Bet.updateOne({_id: bet.id},{isPaid: true});
-
-        const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-        await loggingService.createLogging({gameId: bet.gameId, logType: 'betPaidOut', title: 'Bet paid out', desc: 'Bet "' + betTitle + '" was solved & redistributed.'});
 
         await session.commitTransaction();
         session.endSession();
