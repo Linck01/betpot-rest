@@ -53,8 +53,8 @@ const getBets = {
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),
-    aborted: Joi.boolean().optional(),
-    solved: Joi.boolean().optional()
+    isAborted: Joi.boolean().optional(),
+    isSolved: Joi.boolean().optional()
   }),
 };
 

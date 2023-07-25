@@ -164,13 +164,13 @@ const getBets = catchAsync(async (req, res) => {
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
 
   orCriteria = [];
-  if (req.query.hasOwnProperty('solved')) {
-    if (req.query.solved == false)
+  if (req.query.hasOwnProperty('isSolved')) {
+    if (req.query.isSolved == false)
       filter.isSolved = false;
   }
 
-  if (req.query.hasOwnProperty('aborted')) {
-    if (req.query.aborted == false)
+  if (req.query.hasOwnProperty('isAborted')) {
+    if (req.query.isAborted == false)
       filter.isAborted = false;
   }
 
