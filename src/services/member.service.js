@@ -1,7 +1,8 @@
+const Member = require('../models/member.model.js');
+
 const httpStatus = require('http-status');
-const { Member } = require('../models');
 const ApiError = require('../utils/ApiError');
-const { gameService } = require('./');
+const { gameService } = require('./game.service.js');
 
 /**
  * Create a member
@@ -22,6 +23,12 @@ const getMemberByGameUserId = async (gameId, userId) => {
   const member = await Member.findOne({userId, gameId});
 
   return member;
+};
+
+const getMembers = async (filter, options) => {
+  const members = await Member.find(filter, null, options);
+
+  return members;
 };
 
 const updateMemberByGameUserId = async (gameId, userId, updateBody) => {
@@ -89,5 +96,6 @@ module.exports = {
   updateMembers,
   findOne,
   increment,
-  deleteMembersByGameId
+  deleteMembersByGameId,
+  getMembers
 };

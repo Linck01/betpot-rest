@@ -1,19 +1,25 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
-const { authService, userService, tokenService, emailService } = require('../services');
+const authService = require('../services/auth.service.js');
+const userService = require('../services/user.service.js');
+const tokenService = require('../services/token.service.js');
+const emailService = require('../services/email.service.js');
 const fct = require('../utils/fct');
 const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 const { verify } = require('hcaptcha');
 
 const register = catchAsync(async (req, res) => {
-  const captcha = await verify(config.captchaSecret,req.body.captchaToken);
+  /*const captcha = await verify(config.captchaSecret,req.body.captchaToken);
   if (config.env != 'development' && !captcha.success)
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
 
   const user = await userService.createUser(req.body);
   const tokens = await tokenService.generateAuthTokens(user);
-  res.status(httpStatus.CREATED).send({ user, tokens });
+  res.status(httpStatus.CREATED).send({ user, tokens });*/
+
+  const user = await userService.createUser(req.body);
+  res.status(httpStatus.CREATED).send({user});
 });
 
 const login = catchAsync(async (req, res) => {

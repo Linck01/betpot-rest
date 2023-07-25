@@ -3,7 +3,13 @@ const pick = require('../utils/pick');
 const fct = require('../utils/fct');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { tipService, betService, gameService, memberService, userService } = require('../services');
+
+const betService = require('../services/bet.service.js');
+const gameService = require('../services/game.service.js');
+const memberService = require('../services/member.service.js');
+const userService = require('../services/user.service.js');
+const tipService = require('../services/tip.service.js');
+
 const socket = require('../utils/socket');
 const { verify } = require('hcaptcha');
 const config = require('../config/config');
@@ -67,6 +73,12 @@ const createTip = catchAsync(async (req, res) => {
   // Increment user captchaTicker
   await userService.increment(tipBody.userId, 'captchaTicker', 1);
 
+  // Change currentOdds
+  if (bet.dynamicOdds) {
+    bet = await betService.getBetById(tipBody.betId);
+    await applyDynamicOdds(bet);
+  }
+
   // Send socket message
   member = await memberService.findOne({userId: tipBody.userId, gameId: tipBody.gameId})
   bet = await betService.getBetById(tipBody.betId);
@@ -84,7 +96,7 @@ const catalogueTipCreate = async (tipBody,bet) => {
     await betService.increment(tipBody.betId,'catalogue_answers.' + tipBody.answerId + '.memberCount', 1);
 
   let tip;
-  tipBody.odds = fct.getActualOdds(bet)[tipBody.answerId];
+  tipBody.odds = parseFloat(bet.catalogue_answers[tipBody.answerId].currentOdds);
   tip = await tipService.createTip(tipBody);
 
   // Increment answer inPot
@@ -102,9 +114,9 @@ const scaleTipCreate = async (tipBody,bet) => {
   const intervalTip = await tipService.findOne({betId: tipBody.betId, userId: tipBody.userId, answerDecimal: intervalFilter});
 
   let tip;
-  tipBody.odds = fct.getActualOdds(bet)[interval.index];
+  tipBody.odds = parseFloat(bet.scale_answers[interval.index].currentOdds);
   tip = await tipService.createTip(tipBody);
-
+  
   // Increment interval memberCount (if user has not placed a tip on that specific interval)
   if (!intervalTip) 
     await betService.increment(tipBody.betId,'scale_answers.' + interval.index + '.memberCount', 1);
@@ -115,7 +127,55 @@ const scaleTipCreate = async (tipBody,bet) => {
   return tip;
 };
 
+const applyDynamicOdds = async (bet) => {
+  let answers;
+  if (bet.betType == 'catalogue')
+      answers = bet.catalogue_answers;
+  else if (bet.betType == 'scale') 
+      answers = bet.scale_answers;
 
+  if (answers.filter(a => a.inPot != 0).length == 0)
+    return;
+
+  const average = answers.reduce((prev,curr) => prev + parseFloat(curr.inPot),0) / answers.length;
+
+  for (const answer of answers) {
+    const differenceToAverage = parseFloat(answer.inPot) - average;
+
+    if (differenceToAverage >= 0)
+      answer.currentOdds = 1 + (parseFloat(answer.baseOdds) - 1) / Math.pow((1 + differenceToAverage / average), bet.dynamicOddsPower * 0.3 / Math.ceil(Math.sqrt(answers.length)));
+    else
+      answer.currentOdds = 1 + (parseFloat(answer.baseOdds) - 1) * Math.pow((1 + Math.abs(differenceToAverage) / average), bet.dynamicOddsPower * 0.3 / Math.ceil(Math.sqrt(answers.length)));
+  }
+
+  if (bet.betType == 'catalogue')
+    await betService.updateBetById(bet.id, {catalogue_answers: answers});
+  else if (bet.betType == 'scale') 
+    await betService.updateBetById(bet.id, {scale_answers: answers});
+
+  return;
+}
+
+/*
+const run = async () => {
+  //await applyDynamicOdds(testBet);
+  const bet = await betService.getBetById('64bc367d8819f813f8ad95b4');
+  await applyDynamicOdds(bet);
+}
+const testBet = {
+  dynamicOdds: true,
+  betType: 'catalogue',
+  dynamicOddsPower: 1,
+};
+testBet.catalogue_answers = [
+  {baseOdds: 2, currentOdds: 2, inPot: 1000},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 100},
+  {baseOdds: 2, currentOdds: 2, inPot: 100},
+
+]
+run();
+*/
 
 /*
 const adaptCatalogueOdds = async (bet, tipBody) => {
@@ -137,12 +197,21 @@ const adaptCatalogueOdds = async (bet, tipBody) => {
   }
 
   //console.log(newCatalogueAnswers[tipBody.answerId], newCatalogueAnswers);
-  await betService.updateBetById(bet.id, {catalogue_answers: newCatalogueAnswers});
+  testBet.catalogue_answers = newCatalogueAnswers;//await betService.updateBetById(bet.id, {catalogue_answers: newCatalogueAnswers});
 
   return currentOdds;
 }
-*/
 
+const run = async () => {
+  await adaptCatalogueOdds(testBet, {currency: 100, answerId: 3});
+
+  for (const answer of testBet.catalogue_answers)
+    console.log(answer.inPot + ' ' + answer.newOdds.toFixed(2));
+}
+run();
+
+
+/*
 const adaptScaleOdds = async (bet, tipBody, interval) => {
   const currentOdds = bet.scale_answers[interval.index].odds;
 
@@ -166,6 +235,7 @@ const adaptScaleOdds = async (bet, tipBody, interval) => {
 
   return currentOdds;
 }
+*/
 
 const getTips = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['betId', 'userId']);

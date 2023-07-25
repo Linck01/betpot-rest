@@ -2,8 +2,15 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { gameService, messageService, memberService, betService, tipService, loggingService } = require('../services');
 const bannerUrls = require('../utils/bannerUrls');
+
+const betService = require('../services/bet.service.js');
+const gameService = require('../services/game.service.js');
+const memberService = require('../services/member.service.js');
+const messageService = require('../services/message.service.js');
+const gameLogService = require('../services/gameLog.service.js');
+const tipService = require('../services/tip.service.js');
+
 
 const createGame = catchAsync(async (req, res) => {
   if (!req.user) 
@@ -14,9 +21,10 @@ const createGame = catchAsync(async (req, res) => {
   gameBody.bannerUrl = bannerUrls.getRandom();
 
   const game = await gameService.createGame(gameBody);
+  //const url = encodeURI(game.title.replaceAll(' ', '-') + '-' + game.id);
+  //await gameService.updateGameById(game.id, { url });
 
-  const logTitle = game.title.length > 50 ? game.title.sustr(0,48) + '..' : game.title;
-  await loggingService.createLogging({gameId: game.id, logType: 'gameCreated', title: 'Game created', desc: 'Game ' + logTitle + ' has been created.'});
+  await gameLogService.rebuildGameLogs(game);
 
   res.status(httpStatus.CREATED).send(game);
 });
@@ -42,6 +50,16 @@ const getGame = catchAsync(async (req, res) => {
   
   res.send(game);
 });
+
+/*
+const getGameByUrl = catchAsync(async (req, res) => {
+  const game = await gameService.getGameByUrl(req.params.gameUrl);
+  if (!game) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Game not found');
+  }
+  
+  res.send(game);
+});*/
 
 const updateGame = catchAsync(async (req, res) => {
   if (!req.user) 
@@ -75,7 +93,7 @@ const deleteGame = catchAsync(async (req, res) => {
   await messageService.deleteMessagesByGameId(req.params.gameId);
   await memberService.deleteMembersByGameId(req.params.gameId);
   await betService.deleteBetsByGameId(req.params.gameId);
-  await loggingService.deleteLoggingsByGameId(req.params.gameId);
+  await gameLogService.deleteGameLogsByGameId(req.params.gameId);
     
   await gameService.deleteGameById(req.params.gameId);
   res.status(httpStatus.NO_CONTENT).send();
@@ -87,5 +105,5 @@ module.exports = {
   getGames,
   getGame,
   updateGame,
-  deleteGame,
+  deleteGame
 };

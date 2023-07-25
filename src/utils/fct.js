@@ -36,7 +36,7 @@ module.exports.getTimeDifferenceToNow = (time) => {
 
     return (nowDate - toDate) / 1000;
 }
-
+/*
 module.exports.getActualOdds = (bet) => {
     let answers;
     if (bet.betType == 'catalogue')
@@ -63,7 +63,7 @@ module.exports.getActualOdds = (bet) => {
 
     return actualOdds;
 }
-
+*/
 
 /*
 // all answers
@@ -79,7 +79,7 @@ for answers
     answer.odds = 1 + (initialOdds - 1) * (1 + |differenceToAverage| / factorPower) 
 
 newOdds = (3,2,1.33)
-*/
+
 
 const adaptCatalogueOdds = async (bet, tipBody) => {
     const currentOdds = parseFloat(bet.catalogue_answers[tipBody.answerId].odds);
@@ -104,3 +104,5 @@ const adaptCatalogueOdds = async (bet, tipBody) => {
   
     return currentOdds;
   }
+
+  */

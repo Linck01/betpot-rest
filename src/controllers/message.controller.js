@@ -2,8 +2,13 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { messageService } = require('../services');
-const { userService, gameService, memberService } = require('../services');
+
+const userService = require('../services/user.service.js');
+const gameService = require('../services/game.service.js');
+const memberService = require('../services/member.service.js');
+const messageService = require('../services/message.service.js');
+
+
 const socket = require('../utils/socket');
 
 const createMessage = catchAsync(async (req, res) => {

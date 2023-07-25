@@ -1,14 +1,14 @@
 const express = require('express');
-const authRoute = require('./auth.route');
-const userRoute = require('./user.route');
-const docsRoute = require('./docs.route');
-const gameRoute = require('./game.route');
-const betRoute = require('./bet.route');
-const tipRoute = require('./tip.route');
-const messageRoute = require('./message.route');
-const memberRoute = require('./member.route');
-const loggingRoute = require('./logging.route');
-const config = require('../../config/config');
+const authRoute = require('./auth.route.js');
+const userRoute = require('./user.route.js');
+const docsRoute = require('./docs.route.js');
+const gameRoute = require('./game.route.js');
+const betRoute = require('./bet.route.js');
+const tipRoute = require('./tip.route.js');
+const messageRoute = require('./message.route.js');
+const memberRoute = require('./member.route.js');
+const gameLogRoute = require('./gameLog.route.js');
+const config = require('../../config/config.js');
 
 const router = express.Router();
 
@@ -42,8 +42,8 @@ const defaultRoutes = [
     route: tipRoute,
   },
   {
-    path: '/loggings',
-    route: loggingRoute,
+    path: '/gameLogs',
+    route: gameLogRoute,
   }
 ];
 

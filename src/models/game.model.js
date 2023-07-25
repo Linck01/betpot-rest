@@ -9,6 +9,9 @@ const gameSchema = mongoose.Schema(
       type: mongoose.SchemaTypes.ObjectId,
       required: true,
     },
+    /*url: {
+      type: String,
+    },*/
     serverId: {
       type: Number,
       required: true,
@@ -67,28 +70,7 @@ const gameSchema = mongoose.Schema(
     startCurrency: {
       type: mongoose.Decimal128,
       default: 1000
-    },
-    logs: {
-      type: [{
-        logType: {
-          type: String,
-          required: true
-        },
-        title: {
-          type: String,
-          required: true
-        },
-        desc: {
-          type: String,
-          required: true
-        },
-        createdAt: {
-          type: Date,
-          required: true,
-        }
-      }],
-      default: []
-    },
+    }
   },
   {
     timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },

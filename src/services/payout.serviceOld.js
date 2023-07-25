@@ -3,7 +3,7 @@ const { gameService, tipService, betService } = require('./');
 const util = require('util');
 const mongoose = require('mongoose');
 const socket = require('../utils/socket.js');
-const loggingService = require('./logging.service.js');
+const gameLogService = require('./gameLogService.service.js');
 
 let betQueue = [];
 
@@ -64,8 +64,8 @@ const payoutSettlement = async (bet,settlement) => {
         await Member.bulkWrite(bulkWriteMemberRequest);
         //await Bet.updateOne({_id: bet.id},{isPaid: true});
 
-        const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-        await loggingService.createLogging({gameId: bet.gameId, logType: 'betPaidOut', title: 'Bet paid out', desc: 'Bet "' + betTitle + '" was solved & redistributed.'});
+        const betTitle = bet.title.length > 50 ? bet.title.substr(0,48) + '..' : bet.title;
+        await gameLogService.createGameLog({gameId: bet.gameId, logType: 'betPaidOut', title: 'Bet paid out', desc: 'Bet "' + betTitle + '" was solved & redistributed.'});
 
         await session.commitTransaction();
         session.endSession();

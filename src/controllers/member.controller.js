@@ -2,7 +2,9 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { memberService, gameService } = require('../services');
+
+const gameService = require('../services/game.service.js');
+const memberService = require('../services/member.service.js');
 
 /*const createMember = catchAsync(async (req, res) => {
   const member = await memberService.createMember(req.user.id,req.body);
@@ -60,8 +62,6 @@ const topUpStartCurrency = catchAsync(async (req, res) => {
   
   if (req.user.id != game.userId) 
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Only the admin of a game can top up the member\'s currency.');
-
-  console.log('topUpStartCurrency');
 
   await memberService.updateMembers({gameId: game.id, currency: { $lt: game.startCurrency}}, {currency: game.startCurrency});
   res.status(httpStatus.OK).send();

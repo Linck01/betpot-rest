@@ -46,6 +46,9 @@ const betSchema = mongoose.Schema(
       type: Boolean,
       default: false
     },
+    solvedAt: {
+      type: Date
+    },
     isPaid: {
       type: Boolean,
       default: false
@@ -63,7 +66,11 @@ const betSchema = mongoose.Schema(
           type: String,
           required: true
         },
-        odds: {
+        baseOdds: {
+          type: mongoose.Decimal128,
+          required: true
+        },
+        currentOdds: {
           type: mongoose.Decimal128,
           required: true
         },
@@ -115,7 +122,11 @@ const betSchema = mongoose.Schema(
           default: 0,
           required: true
         },
-        odds: {
+        baseOdds: {
+          type: mongoose.Decimal128,
+          required: true
+        },
+        currentOdds: {
           type: mongoose.Decimal128,
           required: true
         },

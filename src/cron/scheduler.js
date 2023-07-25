@@ -4,6 +4,7 @@ const betService = require('../services/bet.service.js');
 
 module.exports.init = async () => {
     payout();
+    //autoBets();
 }
 
 const payout = async () => {
@@ -19,25 +20,16 @@ const payout = async () => {
     }
 }
 
-
 /*
-module.exports.init = async () => {
-    console.log('Start payout queue.');
-    payoutService.payoutQueue = await betService.getFinishedUnpaidBets();
+const autoBetService = require('../services/autoBet.service.js');
 
-    let nextBet;
+const autoBets = async () => {
     while (true) {
-        if (payoutService.payoutQueue.length > 0) {
-            nextBet = betService.finishedUnpaidBetsQueue[0];
-            try {
-                await payoutService.processPayout(nextBet);
-            } catch (e) { 
-                console.log(e); 
-                await payoutService.removeFromQueue(nextBet.id);
-            }
-        }
-        await fct.sleep(1000);
+        try { await autoBetService.scrape(); }
+        catch (e) { console.log(e); }
+
+        await fct.sleep(2000);
+        break;
     }
 }
-
 */

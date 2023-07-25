@@ -8,16 +8,16 @@ const createBet = {
     desc: Joi.string().required().max(512).allow(''),
     betType: Joi.string().required().max(32),
     dynamicOdds: Joi.boolean().required(),
-    dynamicOddsPower: Joi.number().optional().min(10).max(1000000000000),
+    dynamicOddsPower: Joi.number().optional().min(1).max(10),
     catalogue_answers: Joi.array().items(Joi.object().keys({
       title: Joi.string().required().min(1).max(64),
-      odds: Joi.number().required().min(0).max(32),
+      baseOdds: Joi.number().required().min(0).max(32),
     }).min(2).max(32)),
     scale_options: Joi.object().keys({
       step: Joi.number().required().min(0.000001).max(1000000000000),
       min: Joi.number().required().min(0).max(1000000000000),
       max: Joi.number().required().min(0).max(1000000000000),
-      odds: Joi.number().required().min(1).max(32),
+      baseOdds: Joi.number().required().min(1).max(32),
       winRate: Joi.number().required().min(1).max(95),
     }),
     timeLimit: Joi.date().required()
@@ -53,6 +53,8 @@ const getBets = {
     sortBy: Joi.string(),
     limit: Joi.number().integer(),
     page: Joi.number().integer(),
+    aborted: Joi.boolean().optional(),
+    solved: Joi.boolean().optional()
   }),
 };
 

@@ -1,4 +1,4 @@
-const { Game } = require('../models');
+const Game = require('../models/game.model.js');
 
 const createGame = async (gameBody) => {
   const game = await Game.create(gameBody);

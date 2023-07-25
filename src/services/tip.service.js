@@ -1,9 +1,10 @@
 const httpStatus = require('http-status');
-const { Tip } = require('../models');
+const Tip = require('../models/tip.model.js');
+
 const ApiError = require('../utils/ApiError');
 
 const createTip = async (tipBody) => {
-  tip = await Tip.create(tipBody);
+  const tip = await Tip.create(tipBody);
   return tip;
 };
 

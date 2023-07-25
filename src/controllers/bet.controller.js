@@ -2,7 +2,14 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { betService, gameService, memberService, payoutService, loggingService, tipService } = require('../services');
+const betService = require('../services/bet.service.js');
+const gameService = require('../services/game.service.js');
+const memberService = require('../services/member.service.js');
+const payoutService = require('../services/payout.service.js');
+const gameLogService = require('../services/gameLog.service.js');
+const tipService = require('../services/tip.service.js');
+
+
 const socket = require('../utils/socket');
 
 const createBet = catchAsync(async (req, res) => {
@@ -12,7 +19,7 @@ const createBet = catchAsync(async (req, res) => {
   betBody = req.body;
   betBody.userId = req.user.id;
 
-  const game = await gameService.getGameById(betBody.gameId);
+  let game = await gameService.getGameById(betBody.gameId);
   if (!game)
     throw new ApiError(httpStatus.NOT_FOUND, 'Game not found.');
 
@@ -28,20 +35,21 @@ const createBet = catchAsync(async (req, res) => {
     populateScale_answers(betBody);
   }
   if (betBody.betType == 'catalogue') {
-    
+    for (const answer of betBody.catalogue_answers)
+      answer.currentOdds = answer.baseOdds;
   }
   
   const bet = await betService.createBet(betBody);
 
-  // Add log
-  const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-  await loggingService.createLogging({gameId: game.id, logType: 'betCreated', title: 'Bet created', desc: 'Bet ' + betTitle + ' was created.'});
+  await gameLogService.rebuildGameLogs(game);
 
   // Inc betCount
   await gameService.increment(game.id, 'betCount', 1);
 
   // Send socket
   await socket.sendNewBetToGame(bet);
+  game = await gameService.getGameById(betBody.gameId);
+  await socket.sendUpdateGameToGame(game);
 
   res.status(httpStatus.CREATED).send(bet);
 });
@@ -73,19 +81,16 @@ const solveBet = catchAsync(async (req, res) => {
     result = req.body.answerIds;
 
   if (bet.betType == 'catalogue')
-    await betService.updateBetById(bet.id, {isSolved: true, correctAnswerIds: result});
+    await betService.updateBetById(bet.id, {isSolved: true, solvedAt: new Date().toISOString(), correctAnswerIds: result});
   if (bet.betType == 'scale')
-    await betService.updateBetById(bet.id, {isSolved: true, correctAnswerDecimal: result});
+    await betService.updateBetById(bet.id, {isSolved: true, solvedAt: new Date().toISOString(), correctAnswerDecimal: result});
   
   payoutService.addToQueue(bet.id);
 
   // Update Membercount
   const page = await memberService.queryMembers({gameId: game.id}, {limit:1});
-  //console.log('FINALIZEBET Update Membercount page',page); 
+ 
   await gameService.updateGameById(game.id, {memberCount: page.totalResults});
-  
-  const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-  await loggingService.createLogging({gameId: game.id, logType: 'betSolved', title: 'Bet solved', desc: 'Bet "' + betTitle + '" was solved.'});
 
   bet = await betService.getBetById(req.params.betId);
   await socket.sendUpdateBetToGame(bet);
@@ -113,12 +118,11 @@ const abortBet = catchAsync(async (req, res) => {
   if (!isAdminOrMod)
     throw new ApiError(httpStatus.FORBIDDEN, 'You are not allowed to abort bets of this game.');
 
-  await betService.updateBetById(bet.id, {isAborted: true});
+  await betService.updateBetById(bet.id, {isAborted: true, solvedAt: new Date().toISOString()});
 
   payoutService.addToQueue(bet.id); 
 
-  const betTitle = bet.title.length > 50 ? bet.title.sustr(0,48) + '..' : bet.title;
-  await loggingService.createLogging({gameId: game.id, logType: 'betAborted', title: 'Bet aborted', desc: 'Bet "' + betTitle + '" was aborted.'});
+  await gameLogService.rebuildGameLogs(game);
 
   bet = await betService.getBetById(req.params.betId);
   await socket.sendUpdateBetToGame(bet);
@@ -158,7 +162,18 @@ const endBet = catchAsync(async (req, res) => {
 const getBets = catchAsync(async (req, res) => {
   const filter = pick(req.query, ['gameId', 'userId']);
   const options = pick(req.query, ['sortBy', 'limit', 'page']);
-  
+
+  orCriteria = [];
+  if (req.query.hasOwnProperty('solved')) {
+    if (req.query.solved == false)
+      filter.isSolved = false;
+  }
+
+  if (req.query.hasOwnProperty('aborted')) {
+    if (req.query.aborted == false)
+      filter.isAborted = false;
+  }
+
   const result = await betService.queryBets(filter, options);
   res.send(result);
 });
@@ -209,6 +224,8 @@ const deleteBet = catchAsync(async (req, res) => {
 
   await tipService.deleteTipsByBetId(req.params.betId);
   await betService.deleteBetById(req.params.betId);
+  await gameService.increment(bet.gameId, 'betCount', -1);
+  await gameLogService.rebuildGameLogs(game);
   res.status(httpStatus.NO_CONTENT).send();
 });
 
@@ -229,9 +246,8 @@ const populateScale_answers = (betBody) => {
   betBody.scale_answers = [];
 
   for (let i = 0; i < maxFroms; i++)
-    betBody.scale_answers.push({from: min+i*intervalSize, odds:betBody.scale_options.odds});
+    betBody.scale_answers.push({from: min+i*intervalSize, baseOdds:betBody.scale_options.baseOdds, currentOdds:betBody.scale_options.baseOdds});
 
-  console.log(betBody.scale_answers);
   return;
 };
 

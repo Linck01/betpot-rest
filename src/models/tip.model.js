@@ -36,9 +36,12 @@ const tipSchema = mongoose.Schema(
       required: true,
       default: 0
     },
+    isWinner: {
+      type: Boolean
+    },
     diff: {
       type: mongoose.Decimal128,
-    },
+    }
   },
   {
     timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },

@@ -1,8 +1,8 @@
 const express = require('express');
-const auth = require('../../middlewares/auth');
-const validate = require('../../middlewares/validate');
-const userValidation = require('../../validations/user.validation');
-const userController = require('../../controllers/user.controller');
+const auth = require('../../middlewares/auth.js');
+const validate = require('../../middlewares/validate.js');
+const userValidation = require('../../validations/user.validation.js');
+const userController = require('../../controllers/user.controller.js');
 
 const router = express.Router();
 
@@ -10,6 +10,9 @@ router
   .route('/')
   .get(validate(userValidation.getUsers), userController.getUsers);
 
+router
+  .route('/me')
+  .post(validate(userValidation.getUserByToken), userController.getUserByToken);
 
 router
   .route('/:userId')

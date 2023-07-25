@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { userService } = require('../services');
+const userService = require('../services/user.service.js');
 
 const createUser = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
@@ -25,15 +25,21 @@ const getUsers = catchAsync(async (req, res) => {
   res.send(result);
 });
 
-
 const getUser = catchAsync(async (req, res) => {
   const user = await userService.getUserById(req.params.userId, {username: true, captchaTicker: true, premium: true});
-  if (!user) {
+
+  if (!user) 
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
-  }
+
   res.send(user);
 });
 
+const getUserByToken = catchAsync(async (req, res) => {
+  if (!req.user)
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Not authorized.');
+
+  res.send(req.user);
+});
 
 const updateUser = catchAsync(async (req, res) => {
   if (!req.user || req.user.id != req.params.userId)
@@ -62,4 +68,5 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
+  getUserByToken
 };

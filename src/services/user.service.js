@@ -1,9 +1,6 @@
 const httpStatus = require('http-status');
-const { User } = require('../models');
+const User = require('../models/user.model.js');
 const ApiError = require('../utils/ApiError');
-const { Token } = require('../models');
-var util = require('util');
-
 
 /**
  * Create a user
@@ -61,6 +58,7 @@ const addUsersToArray = async (arr) => {
  */
 const getUserByEmail = async (email) => {
   const user = await User.findOne({ email });
+  
   return user;
 };
 

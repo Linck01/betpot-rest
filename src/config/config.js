@@ -74,5 +74,5 @@ module.exports = {
   },
   appUrl: envVars.APP_URL,
   captchaSecret: envVars.CAPTCHA_SECRET,
-  captchaTickerInterval: envVars.CAPTCHA_TICKER_INTERVAL
+  captchaTickerInterval: envVars.CAPTCHA_TICKER_INTERVAL,
 };

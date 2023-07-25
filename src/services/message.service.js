@@ -1,5 +1,6 @@
 const httpStatus = require('http-status');
-const { Message } = require('../models');
+
+const Message = require('../models/message.model.js');
 const ApiError = require('../utils/ApiError');
 
 const createMessage = async (messageBody) => {

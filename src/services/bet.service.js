@@ -1,4 +1,4 @@
-const { Bet } = require('../models');
+const Bet = require('../models/bet.model.js');
 
 const createBet = async (betBody) => {
   const bet = await Bet.create(betBody);
@@ -54,6 +54,11 @@ const deleteBetsByGameId = async (gameId) => {
   return;
 };
 
+const getBetsByGameId = async (gameId,options) => {
+  const bets = await Bet.find({gameId}, null, options);
+  return bets;
+};
+
 module.exports = {
   createBet,
   queryBets,
@@ -62,6 +67,7 @@ module.exports = {
   deleteBetById,
   getSolvedAbortedUnpaidBets,
   increment,
-  deleteBetsByGameId
+  deleteBetsByGameId,
+  getBetsByGameId
 };
 

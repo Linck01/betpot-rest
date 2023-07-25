@@ -4,7 +4,7 @@ let io;
 module.exports.init = (_io) => {
     io = _io;
     io.on('connection', (socket) => {
-        console.log('a user connected');
+        console.log('User connected to socket');
 
         socket.on('room', function(gameId) {
             socket.join(gameId);
@@ -12,9 +12,15 @@ module.exports.init = (_io) => {
         });
 
         socket.on('disconnect', () => {
-            console.log('user disconnected');
+            console.log('User disconnected from socket');
         });
     });
+}
+
+module.exports.sendUpdateGameToGame = async (game) => {
+    console.log('Sending socket updateGame to room game:' + game.id);
+
+    io.to('game:' + game.id).emit('updateGame', game);
 }
 
 module.exports.sendChatMessageToGame = async (message) => {

@@ -1,12 +1,9 @@
 const mongoose = require('mongoose');
 const { toJSON, paginate } = require('./plugins');
 
-const loggingSchema = mongoose.Schema(
+const gameLogSchema = mongoose.Schema(
   {
     gameId: {
-      type: mongoose.SchemaTypes.ObjectId,
-    },
-    userId: {
       type: mongoose.SchemaTypes.ObjectId,
     },
     logType: {
@@ -21,19 +18,20 @@ const loggingSchema = mongoose.Schema(
       type: String,
       required: true
     },
-  },
-  {
-    timestamps: { createdAt: '_createdAt', updatedAt: '_updatedAt' },
+    _createdAt: {
+      type: Date,
+      required: true,
+    }
   }
 );
 
 // add plugin that converts mongoose to json
-loggingSchema.plugin(toJSON);
-loggingSchema.plugin(paginate);
+gameLogSchema.plugin(toJSON);
+gameLogSchema.plugin(paginate);
 
 /**
  * @typedef Log
  */
-const Logging = mongoose.model('Loggings', loggingSchema);
+const GameLog = mongoose.model('GameLogs', gameLogSchema);
 
-module.exports = Logging;
+module.exports = GameLog;

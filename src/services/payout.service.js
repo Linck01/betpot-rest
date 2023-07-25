@@ -1,5 +1,12 @@
-const { Member, Bet, Tip } = require('../models');
-const { gameService, tipService, betService } = require('./');
+const Member = require('../models/member.model.js');
+const Bet = require('../models/bet.model.js');
+const Tip = require('../models/tip.model.js');
+
+const tipService = require('../services/tip.service.js');
+const betService = require('../services/bet.service.js');
+const gameLogService = require('../services/gameLog.service.js');
+const gameService = require('../services/game.service.js');
+
 const util = require('util');
 const mongoose = require('mongoose');
 const socket = require('../utils/socket.js');
@@ -47,7 +54,7 @@ const getSettlementTips = async (bet) => {
 const payoutSettlement = async (bet,settlementTips) => {
     const session = await mongoose.startSession();
 
-    console.log('settlement',util.inspect(settlementTips,{showHidden: false, depth: 3, colors: true}));
+    //console.log('settlement',util.inspect(settlementTips,{showHidden: false, depth: 3, colors: true}));
     try {
         session.startTransaction();
         
@@ -55,7 +62,7 @@ const payoutSettlement = async (bet,settlementTips) => {
         const bulkWriteMemberRequest = [],bulkWriteTipRequest = [];
         for (let tip of settlementTips) {
             bulkWriteMemberRequest.push({updateOne:{filter: {gameId: bet.gameId,userId: tip.userId}, update: {$inc: {currency: tip.inc}}}});
-            bulkWriteTipRequest.push({updateOne: {filter: {_id: tip._id}, update: {diff: tip.diff}}});
+            bulkWriteTipRequest.push({updateOne: {filter: {_id: tip._id}, update: {diff: tip.diff, isWinner: tip.isWinner}}});
         }
         
         //console.log();console.log('bulkWriteTipRequest',util.inspect(bulkWriteTipRequest,{showHidden: false, depth: 3, colors: true}));
@@ -76,39 +83,37 @@ const payoutSettlement = async (bet,settlementTips) => {
     bet = await betService.getBetById(bet.id);
     const tips = await tipService.getTipsByBetIdLean(bet.id);
     
+    const game = await gameService.getGameById(bet.gameId);
+    await gameLogService.rebuildGameLogs(game);
     await socket.sendUpdateTipsToGame(bet,tips);
     return;
 };
 
 const setActualGainAndLoss = async (tips) => {
-    let totalGainsAndLosses = 0;
     const totalPossibleGain = tips.filter(t => t.isWinner).reduce((prev,curr) => prev + curr.possibleGain, 0);
     const totalPossibleLoss = tips.filter(t => !t.isWinner).reduce((prev,curr) => prev + curr.possibleLoss, 0);
 
-    let totalActualGain, totalActualLoss;
-    if (totalPossibleGain <= 0 || totalPossibleLoss <= 0) {
-        totalActualGain = 0;
-        totalActualLoss = 0;
-    } else if (totalPossibleGain < totalPossibleLoss) {
-        totalActualGain = totalPossibleGain;
-        totalActualLoss = totalPossibleGain;
-    } else if (totalPossibleGain > totalPossibleLoss) {
-        totalActualGain = totalPossibleLoss;
-        totalActualLoss = totalPossibleLoss;
-    }
+    let totalActualGainLoss;
+    if (totalPossibleGain == 0 || totalPossibleLoss == 0) 
+        totalActualGainLoss = 0;
+    else if (totalPossibleGain < totalPossibleLoss) 
+        totalActualGainLoss = totalPossibleGain;
+    else if (totalPossibleGain > totalPossibleLoss) 
+        totalActualGainLoss = totalPossibleLoss;
 
+    let zeroSumCheck = 0;
     for (let tip of tips) {
         if (tip.isWinner) 
-            tip.diff = totalActualGain * (tip.possibleGain / totalPossibleGain); 
+            tip.diff = totalActualGainLoss * (tip.possibleGain / totalPossibleGain); 
         else 
-            tip.diff = (-1) * totalActualLoss * (tip.possibleLoss / totalPossibleLoss);
+            tip.diff = (-1) * totalActualGainLoss * (tip.possibleLoss / totalPossibleLoss);
 
         tip.inc = tip.diff + parseFloat(tip.currency);
-        totalGainsAndLosses += tip.diff;
+        zeroSumCheck += tip.diff;
     }
 
-    if (Math.abs(totalGainsAndLosses) > 0.001)
-        throw Error('Total gains and losses not equal: ' + totalGains + ' ' + totalLosses);
+    if (Math.abs(zeroSumCheck) > 0.001)
+        throw Error('Total gains and losses not equal: ' + zeroSumCheck);
  
   return;
 }
@@ -117,33 +122,33 @@ const setIsWinner = async (bet,tips) => {
     if (bet.betType == 'scale')
         sortProximity(bet,tips);
 
-    let isWinner, lastTip, accumulatedPot = 0, first = true;
+    let lastTip, accumulatedPot = 0, first = true;
 
     const inPot = tips.reduce((prev,curr) => prev + parseFloat(curr.currency), 0);
 
     for (let tip of tips) {
-        isWinner = false;
+        tip.isWinner = false;
 
         if (bet.isAborted) {
-            isWinner = false;
+            tip.isWinner = false;
         } else if (bet.betType == 'catalogue') {
-            isWinner = bet.correctAnswerIds.includes(tip.answerId);
+            tip.isWinner = bet.correctAnswerIds.includes(tip.answerId);
         } else if (bet.betType == 'scale') {
             accumulatedPot += parseFloat(tip.currency);
-            isWinner = first || accumulatedPot < Math.floor(inPot * (bet.scale_options.winRate / 100));
-            console.log(isWinner);
+            tip.isWinner = first || accumulatedPot < Math.floor(inPot * (bet.scale_options.winRate / 100));
 
-            if (!isWinner && lastTip.isWinner && tip.proximity == lastTip.proximity)
-                isWinner = true;
+            if (!tip.isWinner && lastTip.isWinner && tip.proximity == lastTip.proximity)
+                tip.isWinner = true;
 
             first = false;
             lastTip = tip;
         }
-        
-        if (isWinner)
-            tip.isWinner = true;
-        else 
-            tip.isWinner = false;
+    }
+
+    // Check if there is only winners due to having 2 symmetrical proximities at the end and make those two symetrical winners to losers.
+    if (bet.betType == 'scale' && !bet.isAborted && tips.length >= 3 && tips[tips.length].isWinner && tips[tips.length - 1].isWinner && tips[tips.length].proximity == tips[tips.length - 1].proximity) {
+        tips[tips.length].isWinner = false;
+        tips[tips.length - 1].isWinner = false;
     }
 
     return;
