@@ -4,6 +4,7 @@ const betService = require('./bet.service.js');
 const memberService = require('./member.service.js');
 const tipService = require('./tip.service.js');
 const userService = require('./user.service.js');
+const config = require('../config/config');
 
 const createGameLogs = async (logBody) => {
   const gameLog = await GameLog.create(logBody);
@@ -51,7 +52,10 @@ const rebuildGameLogs = async (game) => {
 
   // MemberCounts milestones
   const members = (await memberService.getMembers({gameId: game.id}, {projection: {_createdAt: 1}, sort: { _createdAt: 1}}));
-  let memberCount = 0; const milestones = [1,2,3];//const milestones = [5,10,25,50,100,200,500,1000];
+  let memberCount = 0; 
+  let milestones = [1,2,3];
+  if (config.env === 'production')
+    milestones = [5,10,25,50,100,200,500,1000,2000,5000,10000];
   for (const member of members) {
     memberCount++;
     if (milestones.includes(memberCount))

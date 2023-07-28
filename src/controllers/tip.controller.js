@@ -158,21 +158,50 @@ const applyDynamicOdds = async (bet) => {
 
 /*
 const run = async () => {
-  //await applyDynamicOdds(testBet);
-  const bet = await betService.getBetById('64bc367d8819f813f8ad95b4');
-  await applyDynamicOdds(bet);
+  await applyDynamicOdds(testBet);
+  //const bet = await betService.getBetById('64bc367d8819f813f8ad95b4');
+  //await applyDynamicOdds(bet);
+  console.log(testBet);
 }
 const testBet = {
   dynamicOdds: true,
   betType: 'catalogue',
   dynamicOddsPower: 1,
+
 };
 testBet.catalogue_answers = [
   {baseOdds: 2, currentOdds: 2, inPot: 1000},
   {baseOdds: 2, currentOdds: 2, inPot: 0},
   {baseOdds: 2, currentOdds: 2, inPot: 100},
   {baseOdds: 2, currentOdds: 2, inPot: 100},
-
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
+  {baseOdds: 2, currentOdds: 2, inPot: 0},
 ]
 run();
 */

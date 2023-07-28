@@ -10,16 +10,18 @@ const ApiError = require('../utils/ApiError');
 const { verify } = require('hcaptcha');
 
 const register = catchAsync(async (req, res) => {
-  /*const captcha = await verify(config.captchaSecret,req.body.captchaToken);
-  if (config.env != 'development' && !captcha.success)
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
+  if (config.env == 'production') {
+    const captcha = await verify(config.captchaSecret,req.body.captchaToken);
+    if (config.env != 'development' && !captcha.success)
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Could not verify captcha.');
+  }
 
   const user = await userService.createUser(req.body);
   const tokens = await tokenService.generateAuthTokens(user);
-  res.status(httpStatus.CREATED).send({ user, tokens });*/
-
-  const user = await userService.createUser(req.body);
-  res.status(httpStatus.CREATED).send({user});
+  res.status(httpStatus.CREATED).send({ user, tokens });
+ 
+  //const user = await userService.createUser(req.body);
+  //res.status(httpStatus.CREATED).send({user});
 });
 
 const login = catchAsync(async (req, res) => {
